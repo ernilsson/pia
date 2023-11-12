@@ -1,19 +1,20 @@
 package cmd
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"os"
+	"strings"
 
 	"github.com/ernilsson/pia/environment"
 	"github.com/ernilsson/pia/exchange"
 	"github.com/spf13/cobra"
 )
 
-var target string
+var (
+	target    string
+	variables []string
+)
 
 var do = &cobra.Command{
 	Use:   "do",
@@ -23,41 +24,30 @@ var do = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if verbose {
-			log.Default().Printf("using working directory: %s\n", wd)
-		}
-		env, err := environment.Load(wd)
+		conf, err := os.Open(fmt.Sprintf("%s/env.json", wd))
 		if err != nil {
 			return err
 		}
-		if verbose {
-			log.Default().Printf("loaded environment: %+v", env)
+		env, err := environment.Load(conf)
+		if err != nil {
+			return err
 		}
+
 		f, err := os.Open(target)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
-
-		scn := bufio.NewScanner(f)
-		buf := bytes.NewBufferString("")
-		for scn.Scan() {
-			line := scn.Text()
-			if env.RequiresSubstitution(line) {
-				line, err = env.Substitute(line)
-				if err != nil {
-					return err
-				}
-			}
-			_, err := buf.WriteString(line + "\n")
-			if err != nil {
-				return err
-			}
+		parsed, err := env.SubstituteReader(f)
+		if err != nil {
+			return err
 		}
-		if verbose {
-			log.Default().Println("performed yaml configuration substitution")
+		vars := make(map[string]any)
+		for _, v := range variables {
+			keyval := strings.SplitN(v, "=", 2)
+			vars[keyval[0]] = keyval[1]
 		}
-		ex, err := exchange.LoadReader(buf)
+		ex, err := exchange.Load(parsed, vars)
 		if err != nil {
 			return err
 		}
@@ -76,5 +66,6 @@ var do = &cobra.Command{
 
 func init() {
 	do.Flags().StringVarP(&target, "target", "t", "", "target configuration to use")
+	do.Flags().StringArrayVar(&variables, "var", nil, "overloaded variable values")
 	root.AddCommand(do)
 }

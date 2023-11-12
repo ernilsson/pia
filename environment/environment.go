@@ -1,6 +1,8 @@
 package environment
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -35,12 +37,8 @@ func Bootstrap(dir string) error {
 	return nil
 }
 
-func Load(dir string) (Environment, error) {
-	f, err := os.Open(fmt.Sprintf("%s/env.json", dir))
-	if err != nil {
-		return nil, err
-	}
-	m, err := io.ReadAll(f)
+func Load(r io.Reader) (Environment, error) {
+	m, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
@@ -54,30 +52,67 @@ func Load(dir string) (Environment, error) {
 
 type Environment map[string]any
 
-func (e Environment) RequiresSubstitution(line string) bool {
+func (e Environment) SubstituteReader(r io.Reader) (string, error) {
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return "", err
+	}
+	return e.SubstituteLines(string(b))
+}
+
+func (e Environment) SubstituteLines(r string) (string, error) {
+	buf := bytes.NewBufferString("")
+	scn := bufio.NewScanner(bytes.NewBufferString(r))
+	for scn.Scan() {
+		line := scn.Text()
+		line, err := e.process(line)
+		if err != nil {
+			return "", err
+		}
+		_, err = fmt.Fprintln(buf, line)
+		if err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
+}
+
+func (e Environment) process(line string) (string, error) {
+	if !e.templated(line) {
+		return line, nil
+	}
+	reg := regexp.MustCompile("\\$\\{env\\.(.+?)\\}{1}")
+	targets := reg.FindAllStringSubmatch(line, -1)
+	flattened, err := e.flatten(targets)
+	if err != nil {
+		return "", err
+	}
+	return e.substitute(line, flattened), nil
+}
+
+func (e Environment) templated(line string) bool {
 	reg := regexp.MustCompile("\\$\\{env\\..+?\\}")
 	return reg.Match([]byte(line))
 }
 
-func (e Environment) Substitute(line string) (string, error) {
-	if !e.RequiresSubstitution(line) {
-		return line, errors.New("line does not require environment substitution")
-	}
-	reg := regexp.MustCompile("\\$\\{env\\.(.+?)\\}{1}")
-	targets := reg.FindAllStringSubmatch(line, -1)
+func (e Environment) flatten(targets [][]string) (map[string]any, error) {
 	m := make(map[string]any)
 	for _, target := range targets {
 		res, err := e.resolve(target[1])
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		m[target[1]] = res
 	}
-	for key, val := range m {
+	return m, nil
+}
+
+func (e Environment) substitute(line string, values map[string]any) string {
+	for key, val := range values {
 		exp := regexp.MustCompile(fmt.Sprintf("\\$\\{env.%s\\}", key))
 		line = exp.ReplaceAllString(line, fmt.Sprintf("%v", val))
 	}
-	return line, nil
+	return line
 }
 
 func (e Environment) resolve(key string) (any, error) {
