@@ -95,7 +95,7 @@ func Test_Environment_SubstituteLines_GivenMultiLineSubstitutionThenSubstitutesA
 	}
 }
 
-func Test_Load_GivenInvalidSource_ReturnsError(t *testing.T) {
+func Test_Load_GivenInvalidSourceThenReturnsError(t *testing.T) {
 	json := "{\"env\": \"dev\""
 	env, err := Load(strings.NewReader(json))
 	if err == nil {
@@ -106,7 +106,7 @@ func Test_Load_GivenInvalidSource_ReturnsError(t *testing.T) {
 	}
 }
 
-func Test_Load_GivenValidSource_ReturnsParsedEnvironment(t *testing.T) {
+func Test_Load_GivenValidSourceThenReturnsParsedEnvironment(t *testing.T) {
 	json := "{\"env\": \"dev\", \"person\": {\"age\": 40}}"
 	env, err := Load(strings.NewReader(json))
 	if err != nil {
