@@ -1,8 +1,11 @@
 package environment
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
-func Test_SubstituteLines_GivenNothingToSubstitute_ReturnsCopyOfSource(t *testing.T) {
+func Test_Environment_SubstituteLines_GivenNothingToSubstituteThenReturnsCopyOfSource(t *testing.T) {
 	env := Environment{}
 	src := "{\n\t\"name\": \"Test\",\n\t\"age\": 56\n}\n"
 	out, err := env.SubstituteLines(src)
@@ -15,7 +18,7 @@ func Test_SubstituteLines_GivenNothingToSubstitute_ReturnsCopyOfSource(t *testin
 	}
 }
 
-func Test_GivenSingleLevelSubstitution_SubstitutesWithEnvironmentValue(t *testing.T) {
+func Test_Environment_SubstituteLines_GivenSingleLevelSubstitutionThenSubstitutesWithEnvironmentValue(t *testing.T) {
 	env := Environment{
 		"age": 25,
 	}
@@ -31,7 +34,7 @@ func Test_GivenSingleLevelSubstitution_SubstitutesWithEnvironmentValue(t *testin
 	}
 }
 
-func Test_GivenMultiLevelSubstitution_SubstitutesWithEnvironmentValue(t *testing.T) {
+func Test_Environment_SubstituteLines_GivenMultiLevelSubstitutionThenSubstitutesWithEnvironmentValue(t *testing.T) {
 	env := Environment{
 		"person": map[string]any{
 			"age": 25,
@@ -49,7 +52,7 @@ func Test_GivenMultiLevelSubstitution_SubstitutesWithEnvironmentValue(t *testing
 	}
 }
 
-func Test_GivenMissingSingleLevelKey_ReturnsError(t *testing.T) {
+func Test_Environment_SubstituteLines_GivenMissingSingleLevelKeyThenReturnsError(t *testing.T) {
 	env := Environment{}
 	src := "{\n\t\"name\": \"Test\",\n\t\"age\": ${env.age}\n}\n"
 	out, err := env.SubstituteLines(src)
@@ -61,7 +64,7 @@ func Test_GivenMissingSingleLevelKey_ReturnsError(t *testing.T) {
 	}
 }
 
-func Test_GivenMissingNestedKey_ReturnsError(t *testing.T) {
+func Test_Environment_SubstituteLines_GivenMissingNestedKeyThenReturnsError(t *testing.T) {
 	env := Environment{}
 	src := "{\n\t\"name\": \"Test\",\n\t\"age\": ${env.person.age}\n}\n"
 	out, err := env.SubstituteLines(src)
@@ -73,7 +76,7 @@ func Test_GivenMissingNestedKey_ReturnsError(t *testing.T) {
 	}
 }
 
-func Test_MultiLineSubstitution_SubstitutesAllLines(t *testing.T) {
+func Test_Environment_SubstituteLines_GivenMultiLineSubstitutionThenSubstitutesAllLines(t *testing.T) {
 	env := Environment{
 		"person": map[string]any{
 			"name": "E. R. Nilsson",
@@ -89,5 +92,31 @@ func Test_MultiLineSubstitution_SubstitutesAllLines(t *testing.T) {
 	expected := "{\n\t\"name\": \"E. R. Nilsson\",\n\t\"age\": 25\n}\n"
 	if out != expected {
 		t.Errorf("processed output does not equal expected:\n%s\n%s", expected, out)
+	}
+}
+
+func Test_Load_GivenInvalidSource_ReturnsError(t *testing.T) {
+	json := "{\"env\": \"dev\""
+	env, err := Load(strings.NewReader(json))
+	if err == nil {
+		t.Errorf("expected non-nil error but got %s", err)
+	}
+	if env != nil {
+		t.Errorf("expected nil result but got %+v", env)
+	}
+}
+
+func Test_Load_GivenValidSource_ReturnsParsedEnvironment(t *testing.T) {
+	json := "{\"env\": \"dev\", \"person\": {\"age\": 40}}"
+	env, err := Load(strings.NewReader(json))
+	if err != nil {
+		t.Error(err)
+	}
+	if env["env"] != "dev" {
+		t.Errorf("expected key 'env' to equal 'dev' but got %s", env["env"])
+	}
+	person := env["person"].(map[string]any)
+	if person["age"] != float64(40) {
+		t.Errorf("expected key 'person.age' to equal float64(40) but got %v (%T)", person["age"], person["age"])
 	}
 }
