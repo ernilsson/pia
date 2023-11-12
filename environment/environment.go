@@ -126,5 +126,9 @@ func (e Environment) resolve(key string) (any, error) {
 		}
 		v = v[segment].(map[string]any)
 	}
-	return v[leaf], nil
+	val, ok := v[leaf]
+	if !ok {
+		return nil, fmt.Errorf("references non-existent environment variable '%s'", key)
+	}
+	return val, nil
 }
