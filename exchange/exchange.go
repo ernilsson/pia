@@ -21,31 +21,11 @@ func Load(conf string, vars map[string]any) (Exchange, error) {
 	if err := yaml.Unmarshal([]byte(conf), &ex); err != nil {
 		return Nil, err
 	}
-	for key, val := range ex.Request.Body.Variables {
-		filled := val
-		v, ok := vars[key]
-		if !ok {
-			if filled.Default != nil {
-				filled.Value = filled.Default
-			} else {
-				return Nil, fmt.Errorf("no value provided for variable '%s'", key)
-			}
-		} else {
-			filled.Value = v
-		}
-		delete(ex.Request.Body.Variables, key)
-		ex.Request.Body.Variables[key] = filled
+	if err := ex.fill(vars); err != nil {
+		return Nil, err
 	}
-	if ex.Request.URL == "" {
-		return Nil, errors.New("no url provided")
-	}
-	if ex.Request.Method == "" {
-		return Nil, errors.New("no method provided")
-	}
-	for key, val := range ex.Request.Body.Variables {
-		if val.Required && val.Value == nil {
-			return Nil, fmt.Errorf("no value provided for required variable '%s'", key)
-		}
+	if err := ex.error(); err != nil {
+		return Nil, err
 	}
 	return ex, nil
 }
@@ -64,19 +44,50 @@ type RequestConfiguration struct {
 	Body    BodyConfiguration `yaml:"body"`
 }
 
-func (rc RequestConfiguration) emptyBody() bool {
-	return rc.Body.Template == ""
-}
-
 type BodyConfiguration struct {
 	Template  string              `yaml:"template"`
 	Variables map[string]Variable `yaml:"variables"`
+}
+
+func (bc BodyConfiguration) empty() bool {
+	return bc.Template == ""
 }
 
 type Variable struct {
 	Required bool `yaml:"required"`
 	Value    any
 	Default  any `yaml:"default"`
+}
+
+func (e *Exchange) fill(vars map[string]any) error {
+	for key, val := range e.Request.Body.Variables {
+		filled := val
+		v, ok := vars[key]
+		if !ok && filled.Default == nil {
+			return fmt.Errorf("no value provided for variable '%s'", key)
+		} else if !ok && filled.Default != nil {
+			filled.Value = filled.Default
+		} else {
+			filled.Value = v
+		}
+		e.Request.Body.Variables[key] = filled
+	}
+	return nil
+}
+
+func (e Exchange) error() error {
+	if e.Request.URL == "" {
+		return errors.New("no url provided")
+	}
+	if e.Request.Method == "" {
+		return errors.New("no method provided")
+	}
+	for key, val := range e.Request.Body.Variables {
+		if val.Required && val.Value == nil {
+			return fmt.Errorf("no value provided for required variable '%s'", key)
+		}
+	}
+	return nil
 }
 
 func (e Exchange) Do() (*http.Response, error) {
@@ -106,7 +117,7 @@ func (e Exchange) headers() http.Header {
 }
 
 func (e Exchange) body() ([]byte, error) {
-	if e.Request.emptyBody() {
+	if e.Request.Body.empty() {
 		return nil, nil
 	}
 	tmpl, err := os.Open(e.Request.Body.Template)
@@ -118,16 +129,14 @@ func (e Exchange) body() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return e.substituteTmpl(b)
+	return e.processTemplate(b)
 }
 
-func (e Exchange) substituteTmpl(tmpl []byte) ([]byte, error) {
+func (e Exchange) processTemplate(tmpl []byte) ([]byte, error) {
 	buf := bytes.NewBufferString("")
 	scn := bufio.NewScanner(bytes.NewReader(tmpl))
 	for scn.Scan() {
-		line := scn.Text()
-		var err error
-		line, err = e.substituteLine(line)
+		line, err := e.substitute(scn.Text())
 		if err != nil {
 			return nil, err
 		}
@@ -139,28 +148,36 @@ func (e Exchange) substituteTmpl(tmpl []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (e Exchange) substituteLine(line string) (string, error) {
-	if !e.requiresSubstitution(line) {
+func (e Exchange) substitute(line string) (string, error) {
+	if !e.templated(line) {
 		return line, nil
 	}
 	reg := regexp.MustCompile("\\$\\{var\\.(.+?)\\}{1}")
 	targets := reg.FindAllStringSubmatch(line, -1)
-	m := make(map[string]any)
-	for _, target := range targets {
-		res, ok := e.Request.Body.Variables[target[1]]
-		if !ok {
-			return "", fmt.Errorf("unkown variable '%s'", target)
-		}
-		m[target[1]] = res.Value
+	flattened, err := e.flatten(targets)
+	if err != nil {
+		return "", err
 	}
-	for key, val := range m {
+	for key, val := range flattened {
 		exp := regexp.MustCompile(fmt.Sprintf("\\$\\{var.%s\\}", key))
 		line = exp.ReplaceAllString(line, fmt.Sprintf("%v", val))
 	}
 	return line, nil
 }
 
-func (e Exchange) requiresSubstitution(line string) bool {
+func (e Exchange) templated(line string) bool {
 	reg := regexp.MustCompile("\\$\\{var\\..+?\\}")
 	return reg.Match([]byte(line))
+}
+
+func (e Exchange) flatten(targets [][]string) (map[string]any, error) {
+	m := make(map[string]any)
+	for _, target := range targets {
+		res, ok := e.Request.Body.Variables[target[1]]
+		if !ok {
+			return nil, fmt.Errorf("unkown variable '%s'", target)
+		}
+		m[target[1]] = res.Value
+	}
+	return m, nil
 }

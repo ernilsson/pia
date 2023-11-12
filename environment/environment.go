@@ -64,8 +64,7 @@ func (e Environment) SubstituteLines(r string) (string, error) {
 	buf := bytes.NewBufferString("")
 	scn := bufio.NewScanner(bytes.NewBufferString(r))
 	for scn.Scan() {
-		line := scn.Text()
-		line, err := e.process(line)
+		line, err := e.substitute(scn.Text())
 		if err != nil {
 			return "", err
 		}
@@ -77,7 +76,7 @@ func (e Environment) SubstituteLines(r string) (string, error) {
 	return buf.String(), nil
 }
 
-func (e Environment) process(line string) (string, error) {
+func (e Environment) substitute(line string) (string, error) {
 	if !e.templated(line) {
 		return line, nil
 	}
@@ -87,7 +86,11 @@ func (e Environment) process(line string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return e.substitute(line, flattened), nil
+	for key, val := range flattened {
+		exp := regexp.MustCompile(fmt.Sprintf("\\$\\{env.%s\\}", key))
+		line = exp.ReplaceAllString(line, fmt.Sprintf("%v", val))
+	}
+	return line, nil
 }
 
 func (e Environment) templated(line string) bool {
@@ -105,14 +108,6 @@ func (e Environment) flatten(targets [][]string) (map[string]any, error) {
 		m[target[1]] = res
 	}
 	return m, nil
-}
-
-func (e Environment) substitute(line string, values map[string]any) string {
-	for key, val := range values {
-		exp := regexp.MustCompile(fmt.Sprintf("\\$\\{env.%s\\}", key))
-		line = exp.ReplaceAllString(line, fmt.Sprintf("%v", val))
-	}
-	return line
 }
 
 func (e Environment) resolve(key string) (any, error) {
