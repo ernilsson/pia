@@ -51,7 +51,7 @@ var do = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		resp, err := ex.Do()
+		resp, err := ex.Do(env)
 		if err != nil {
 			return err
 		}

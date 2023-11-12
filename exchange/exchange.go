@@ -11,6 +11,7 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/ernilsson/pia/environment"
 	"gopkg.in/yaml.v3"
 )
 
@@ -90,7 +91,7 @@ func (e Exchange) error() error {
 	return nil
 }
 
-func (e Exchange) Do() (*http.Response, error) {
+func (e Exchange) Do(env environment.Environment) (*http.Response, error) {
 	url, err := url.Parse(e.Request.URL)
 	if err != nil {
 		return nil, err
@@ -100,7 +101,7 @@ func (e Exchange) Do() (*http.Response, error) {
 		Method: e.Request.Method,
 		Header: e.headers(),
 	}
-	body, err := e.body()
+	body, err := e.body(env)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +117,7 @@ func (e Exchange) headers() http.Header {
 	return headers
 }
 
-func (e Exchange) body() ([]byte, error) {
+func (e Exchange) body(env environment.Environment) ([]byte, error) {
 	if e.Request.Body.empty() {
 		return nil, nil
 	}
@@ -129,7 +130,15 @@ func (e Exchange) body() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return e.processTemplate(b)
+	b, err = e.processTemplate(b)
+	if err != nil {
+		return nil, err
+	}
+	str, err := env.SubstituteReader(bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	return []byte(str), nil
 }
 
 func (e Exchange) processTemplate(tmpl []byte) ([]byte, error) {
