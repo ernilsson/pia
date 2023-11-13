@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -24,11 +23,8 @@ var do = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		conf, err := os.Open(fmt.Sprintf("%s/env.json", wd))
-		if err != nil {
-			return err
-		}
-		env, err := environment.Load(conf)
+
+		env, err := environment.LoadFile(fmt.Sprintf("%s/env.json", wd))
 		if err != nil {
 			return err
 		}
@@ -51,16 +47,12 @@ var do = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		resp, err := ex.Do(env)
+		_, err = ex.Do(env)
 		if err != nil {
 			return err
 		}
-		if body, err := io.ReadAll(resp.Body); err != nil {
-			return err
-		} else {
-			fmt.Println(string(body))
-		}
-		return nil
+
+		return environment.WriteFile(fmt.Sprintf("%s/env.json", wd), env)
 	},
 }
 

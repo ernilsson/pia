@@ -14,7 +14,7 @@ func Test_Environment_SubstituteLines_GivenNothingToSubstituteThenReturnsCopyOfS
 		return
 	}
 	if out != src {
-		t.Errorf("pristine source does not equal output:\n%s\n%s", src, out)
+		t.Errorf("pristine output does not equal source:\n%s\n%s", src, out)
 	}
 }
 

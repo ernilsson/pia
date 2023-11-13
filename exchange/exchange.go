@@ -3,6 +3,7 @@ package exchange
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/ernilsson/pia/environment"
 	"gopkg.in/yaml.v3"
@@ -32,10 +34,11 @@ func Load(conf string, vars map[string]any) (Exchange, error) {
 }
 
 type Exchange struct {
-	Version     string               `yaml:"version"`
-	Name        string               `yaml:"name"`
-	Description string               `yaml:"description"`
-	Request     RequestConfiguration `yaml:"request"`
+	Version     string                `yaml:"version"`
+	Name        string                `yaml:"name"`
+	Description string                `yaml:"description"`
+	Request     RequestConfiguration  `yaml:"request"`
+	Response    ResponseConfiguration `yaml:"response"`
 }
 
 type RequestConfiguration struct {
@@ -58,6 +61,23 @@ type Variable struct {
 	Required bool `yaml:"required"`
 	Value    any
 	Default  any `yaml:"default"`
+}
+
+type ResponseConfiguration struct {
+	Expect  Expectation                    `yaml:"expect"`
+	Exports map[string]ExportConfiguration `yaml:"export"`
+}
+
+type Expectation struct {
+	Status int `yaml:"status"`
+}
+
+func (e Expectation) empty() bool {
+	return e.Status < 100
+}
+
+type ExportConfiguration struct {
+	Key string
 }
 
 func (e *Exchange) fill(vars map[string]any) error {
@@ -106,7 +126,18 @@ func (e Exchange) Do(env environment.Environment) (*http.Response, error) {
 		return nil, err
 	}
 	req.Body = io.NopCloser(bytes.NewBuffer(body))
-	return http.DefaultClient.Do(&req)
+	res, err := http.DefaultClient.Do(&req)
+	if err != nil {
+		return nil, err
+	}
+	body, err = io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	if err := e.export(env, body); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (e Exchange) headers() http.Header {
@@ -189,4 +220,34 @@ func (e Exchange) flatten(targets [][]string) (map[string]any, error) {
 		m[target[1]] = res.Value
 	}
 	return m, nil
+}
+
+func (e Exchange) export(env environment.Environment, body []byte) error {
+	var um map[string]any
+	if err := json.Unmarshal(body, &um); err != nil {
+		return err
+	}
+
+	for key, val := range e.Response.Exports {
+		segments := strings.Split(val.Key, ".")
+		leaf := segments[len(segments)-1]
+		segments = segments[:len(segments)-1]
+
+		v := um
+		for _, segment := range segments {
+			_, ok := v[segment]
+			if !ok {
+				return fmt.Errorf("could not find value for '%s' to export into '%s'", val.Key, key)
+			}
+			_, ok = v[segment].(map[string]any)
+			if !ok {
+				return fmt.Errorf("could not find value for '%s' to export into '%s'", val.Key, key)
+			}
+			v = v[segment].(map[string]any)
+		}
+		if err := env.Set(key, v[leaf]); err != nil {
+			return err
+		}
+	}
+	return nil
 }

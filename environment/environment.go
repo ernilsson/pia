@@ -37,6 +37,15 @@ func Bootstrap(dir string) error {
 	return nil
 }
 
+func LoadFile(fname string) (Environment, error) {
+	f, err := os.OpenFile(fname, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return Load(f)
+}
+
 func Load(r io.Reader) (Environment, error) {
 	m, err := io.ReadAll(r)
 	if err != nil {
@@ -48,6 +57,25 @@ func Load(r io.Reader) (Environment, error) {
 		return nil, err
 	}
 	return env, nil
+}
+
+func WriteFile(fname string, env Environment) error {
+	f, err := os.Create(fname)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return Write(f, env)
+}
+
+func Write(w io.Writer, env Environment) error {
+	m, err := json.Marshal(env)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(m)
+	return err
 }
 
 type Environment map[string]any
@@ -131,4 +159,24 @@ func (e Environment) resolve(key string) (any, error) {
 		return nil, fmt.Errorf("references non-existent environment variable '%s'", key)
 	}
 	return val, nil
+}
+
+func (e Environment) Set(key string, value any) error {
+	segments := strings.Split(key, ".")
+	leaf := segments[len(segments)-1]
+	segments = segments[:len(segments)-1]
+
+	v := e
+	for _, segment := range segments {
+		_, ok := v[segment]
+		if !ok {
+			v[segment] = make(map[string]any)
+		}
+		v, ok = v[segment].(map[string]any)
+		if !ok {
+			return fmt.Errorf("environment key on '%s' already exists as value", segment)
+		}
+	}
+	v[leaf] = value
+	return nil
 }
