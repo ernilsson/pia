@@ -19,6 +19,10 @@ func NewRequest(p profile.Profile, configuration RequestConfiguration) (*http.Re
 	if err != nil {
 		return nil, err
 	}
+	body, err = configuration.Body.Variables.SubstituteLines(body)
+	if err != nil {
+		return nil, err
+	}
 	request, err := http.NewRequest(configuration.Method, configuration.URL, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err

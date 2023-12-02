@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"io"
 	"os"
+	"strings"
 )
 
 var prep = &cobra.Command{
@@ -23,8 +24,12 @@ var prep = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		vars, err := parseVariables(cmd)
+		if err != nil {
+			return err
+		}
 		target := args[0]
-		ex, err := exchange.GetExchange(prof, exchange.FileProvider(fmt.Sprintf("%s/%s", wd, target)))
+		ex, err := exchange.GetExchange(exchange.FileProvider(fmt.Sprintf("%s/%s", wd, target)), prof, vars)
 		if err != nil {
 			return err
 		}
@@ -47,6 +52,20 @@ var prep = &cobra.Command{
 	},
 }
 
+func parseVariables(cmd *cobra.Command) (map[string]any, error) {
+	raw, err := cmd.Flags().GetStringSlice("var")
+	if err != nil {
+		return nil, err
+	}
+	vars := make(map[string]any)
+	for _, kv := range raw {
+		split := strings.Split(kv, "=")
+		vars[split[0]] = split[1]
+	}
+	return vars, nil
+}
+
 func init() {
+	prep.Flags().StringSlice("var", nil, "sets a variable for the request body")
 	root.AddCommand(prep)
 }

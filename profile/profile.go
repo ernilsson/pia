@@ -99,11 +99,11 @@ func (p Profile) Put(key string, value any) {
 }
 
 func (p Profile) SubstituteLine(line string) (string, error) {
-	regx := regexp.MustCompile("\\$\\{profile\\..+?\\}")
+	regx := regexp.MustCompile("\\$\\{profile\\..+?}")
 	if !regx.MatchString(line) {
 		return line, nil
 	}
-	regx = regexp.MustCompile("\\$\\{profile\\.(.+?)\\}{1}")
+	regx = regexp.MustCompile("\\$\\{profile\\.(.+?)}")
 	matches := regx.FindAllStringSubmatch(line, -1)
 	for _, match := range matches {
 		val, err := p.Get(match[1])
