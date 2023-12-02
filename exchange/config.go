@@ -18,7 +18,12 @@ func FileProvider(path string) ProviderFunc {
 		if err != nil {
 			return nil, err
 		}
-		defer must(f.Close())
+		defer func(f *os.File) {
+			err := f.Close()
+			if err != nil {
+				panic(err)
+			}
+		}(f)
 		return io.ReadAll(f)
 	}
 }
@@ -69,7 +74,12 @@ func (bc BodyConfiguration) Template() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer must(f.Close())
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(f)
 	data, err := io.ReadAll(f)
 	if err != nil {
 		return nil, err
