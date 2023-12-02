@@ -10,7 +10,7 @@ var version = &cobra.Command{
 	Use:   "version",
 	Short: "currently installed pia version",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("pia pre-release 0.0.1")
+		fmt.Println("pia pre-release")
 	},
 }
 

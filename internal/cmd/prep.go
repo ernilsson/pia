@@ -10,11 +10,10 @@ import (
 )
 
 var prep = &cobra.Command{
-	Use:        "prepare",
-	Aliases:    []string{"prep"},
-	SuggestFor: nil,
-	Short:      "prepares a request without executing it and writes the result to stdout",
-	Args:       cobra.ExactArgs(1),
+	Use:     "prepare",
+	Aliases: []string{"prep"},
+	Short:   "prepares a request without executing it and writes the result to stdout",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		prof, err := profile.UnmarshalActive()
 		if err != nil {

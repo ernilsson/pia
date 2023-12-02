@@ -1,6 +1,8 @@
 package profile
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -112,4 +114,19 @@ func (p Profile) SubstituteLine(line string) (string, error) {
 		line = regx.ReplaceAllString(line, fmt.Sprintf("%v", val))
 	}
 	return line, nil
+}
+
+func (p Profile) SubstituteLines(data []byte) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	scn := bufio.NewScanner(bytes.NewReader(data))
+	for scn.Scan() {
+		line, err := p.SubstituteLine(scn.Text())
+		if err != nil {
+			return nil, err
+		}
+		if _, err := fmt.Fprintln(buf, line); err != nil {
+			return nil, err
+		}
+	}
+	return buf.Bytes(), nil
 }

@@ -1,9 +1,6 @@
 package exchange
 
 import (
-	"bufio"
-	"bytes"
-	"fmt"
 	"github.com/ernilsson/pia/profile"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -33,19 +30,12 @@ func GetExchange(p profile.Profile, pf ProviderFunc) (Exchange, error) {
 	if err != nil {
 		return Exchange{}, err
 	}
-	buf := new(bytes.Buffer)
-	scn := bufio.NewScanner(bytes.NewReader(data))
-	for scn.Scan() {
-		line, err := p.SubstituteLine(scn.Text())
-		if err != nil {
-			return Exchange{}, err
-		}
-		if _, err := fmt.Fprintln(buf, line); err != nil {
-			return Exchange{}, err
-		}
+	data, err = p.SubstituteLines(data)
+	if err != nil {
+		return Exchange{}, err
 	}
 	var ex Exchange
-	if err := yaml.Unmarshal(buf.Bytes(), &ex); err != nil {
+	if err := yaml.Unmarshal(data, &ex); err != nil {
 		return Exchange{}, err
 	}
 	return ex, nil
