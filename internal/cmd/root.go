@@ -9,13 +9,13 @@ import (
 
 var root = &cobra.Command{
 	Use:   "pia",
-	Short: "pia is a fast and easy to use API communicator for developers",
+	Short: "pia is a simple tool used to call and test web API:s",
 	Run:   func(cmd *cobra.Command, args []string) {},
 }
 
 func Execute() {
 	if err := root.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
