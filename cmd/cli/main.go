@@ -1,7 +1,9 @@
 package main
 
-import "github.com/ernilsson/pia/internal/cmd"
+import (
+	"github.com/ernilsson/pia/cmd/cli/commands"
+)
 
 func main() {
-	cmd.Execute()
+	commands.Execute()
 }
