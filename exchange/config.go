@@ -65,6 +65,21 @@ type BodyConfiguration struct {
 
 type VariableSet map[string]any
 
+func (v VariableSet) SubstituteLines(data []byte) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	scn := bufio.NewScanner(bytes.NewReader(data))
+	for scn.Scan() {
+		line, err := v.SubstituteLine(scn.Text())
+		if err != nil {
+			return nil, err
+		}
+		if _, err := fmt.Fprintln(buf, line); err != nil {
+			return nil, err
+		}
+	}
+	return buf.Bytes(), nil
+}
+
 func (v VariableSet) SubstituteLine(line string) (string, error) {
 	regx := regexp.MustCompile("\\$\\{var\\..+?}")
 	if !regx.MatchString(line) {
@@ -85,6 +100,9 @@ func (v VariableSet) SubstituteLine(line string) (string, error) {
 
 func (v VariableSet) resolve(key string) (any, error) {
 	segments := strings.Split(key, ":")
+	if len(segments) > 2 {
+		return nil, fmt.Errorf("malformed key for variable '%s'", key)
+	}
 	val, ok := v[segments[0]]
 	if !ok && len(segments) < 2 {
 		return nil, fmt.Errorf("variable '%s' not set and has no default value", key)
@@ -93,21 +111,6 @@ func (v VariableSet) resolve(key string) (any, error) {
 		return segments[1], nil
 	}
 	return val, nil
-}
-
-func (v VariableSet) SubstituteLines(data []byte) ([]byte, error) {
-	buf := new(bytes.Buffer)
-	scn := bufio.NewScanner(bytes.NewReader(data))
-	for scn.Scan() {
-		line, err := v.SubstituteLine(scn.Text())
-		if err != nil {
-			return nil, err
-		}
-		if _, err := fmt.Fprintln(buf, line); err != nil {
-			return nil, err
-		}
-	}
-	return buf.Bytes(), nil
 }
 
 func (bc BodyConfiguration) Template() ([]byte, error) {
