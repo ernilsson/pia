@@ -3,7 +3,6 @@ package exchange
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/ernilsson/pia/profile"
 	"gopkg.in/yaml.v3"
@@ -74,23 +73,26 @@ func (v VariableSet) SubstituteLine(line string) (string, error) {
 	regx = regexp.MustCompile("\\$\\{var\\.(.+?)}")
 	matches := regx.FindAllStringSubmatch(line, -1)
 	for _, match := range matches {
-		// TODO: Refactor default value extraction (possibly make value resolution its own func)
-		var defaultVal any
-		defaults := strings.Split(match[1], ":")
-		if len(defaults) == 2 {
-			defaultVal = defaults[1]
-		}
-		val, ok := v[match[1]]
-		if !ok && defaultVal == nil {
-			return "", errors.New("variable '" + match[1] + "' not set and has no default value")
-		}
-		if !ok {
-			val = defaultVal
+		val, err := v.resolve(match[1])
+		if err != nil {
+			return "", err
 		}
 		regx = regexp.MustCompile(fmt.Sprintf("\\$\\{var.%s\\}", match[1]))
 		line = regx.ReplaceAllString(line, fmt.Sprintf("%v", val))
 	}
 	return line, nil
+}
+
+func (v VariableSet) resolve(key string) (any, error) {
+	segments := strings.Split(key, ":")
+	val, ok := v[segments[0]]
+	if !ok && len(segments) < 2 {
+		return nil, fmt.Errorf("variable '%s' not set and has no default value", key)
+	}
+	if !ok {
+		return segments[1], nil
+	}
+	return val, nil
 }
 
 func (v VariableSet) SubstituteLines(data []byte) ([]byte, error) {
