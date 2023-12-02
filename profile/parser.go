@@ -23,7 +23,12 @@ func FileProvider(wd string) ProviderFunc {
 		if err != nil {
 			return nil, err
 		}
-		defer f.Close()
+		defer func(f *os.File) {
+			err := f.Close()
+			if err != nil {
+				panic(err)
+			}
+		}(f)
 		return io.ReadAll(f)
 	}
 }

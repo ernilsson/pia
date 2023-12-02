@@ -22,7 +22,12 @@ func Bootstrap(wd string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(f)
 	return nil
 }
 
@@ -31,8 +36,12 @@ func SetActiveProfileName(wd string, profile string) error {
 	if err != nil {
 		return err
 	}
-	// TODO: Handle error on closing
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(f)
 
 	// TODO: Handle if all bytes were not written
 	if _, err := f.WriteString(profile); err != nil {
@@ -46,8 +55,12 @@ func ActiveProfileName(wd string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// TODO: Handle error on closing
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(f)
 
 	raw, err := io.ReadAll(f)
 	if err != nil {
