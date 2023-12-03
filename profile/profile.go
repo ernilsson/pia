@@ -43,7 +43,6 @@ func SetActiveProfileName(wd string, profile string) error {
 		}
 	}(f)
 
-	// TODO: Handle if all bytes were not written
 	if _, err := f.WriteString(profile); err != nil {
 		return err
 	}

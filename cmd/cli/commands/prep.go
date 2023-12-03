@@ -33,10 +33,11 @@ var prep = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		req, err := exchange.NewRequest(prof, ex.Request)
+		req, err := exchange.NewRequest(ex.Request, exchange.TemplatedBody(prof, exchange.VariableSet(vars)))
 		if err != nil {
 			return err
 		}
+
 		fmt.Printf("URL: %s\n", req.URL)
 		fmt.Printf("Method: %s\n", req.Method)
 		for key, v := range req.Header {

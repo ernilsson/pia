@@ -2,31 +2,45 @@ package exchange
 
 import (
 	"bytes"
-	"github.com/ernilsson/pia/profile"
+	"io"
 	"net/http"
 )
 
-func NewRequest(p profile.Profile, configuration RequestConfiguration) (*http.Request, error) {
-	headers := make(http.Header)
-	for key, value := range configuration.Headers {
-		headers[key] = []string{value}
+type SubstitutionSource interface {
+	SubstituteLines(data []byte) ([]byte, error)
+}
+
+type NewRequestOption func(rc RequestConfiguration, req *http.Request) error
+
+func TemplatedBody(src ...SubstitutionSource) NewRequestOption {
+	return func(rc RequestConfiguration, req *http.Request) error {
+		body, err := rc.Body.Template()
+		if err != nil {
+			return err
+		}
+		for _, sub := range src {
+			body, err = sub.SubstituteLines(body)
+			if err != nil {
+				return err
+			}
+		}
+		req.Body = io.NopCloser(bytes.NewReader(body))
+		return nil
 	}
-	body, err := configuration.Body.Template()
+}
+
+func NewRequest(rc RequestConfiguration, opts ...NewRequestOption) (*http.Request, error) {
+	req, err := http.NewRequest(rc.Method, rc.URL, nil)
 	if err != nil {
 		return nil, err
 	}
-	body, err = p.SubstituteLines(body)
-	if err != nil {
-		return nil, err
+	for key, value := range rc.Headers {
+		req.Header[key] = []string{value}
 	}
-	body, err = configuration.Body.Variables.SubstituteLines(body)
-	if err != nil {
-		return nil, err
+	for _, opt := range opts {
+		if err := opt(rc, req); err != nil {
+			return nil, err
+		}
 	}
-	request, err := http.NewRequest(configuration.Method, configuration.URL, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-	request.Header = headers
-	return request, nil
+	return req, nil
 }
