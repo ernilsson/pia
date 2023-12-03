@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"github.com/ernilsson/pia/exchange"
+	"github.com/ernilsson/pia/plug"
 	"github.com/ernilsson/pia/profile"
 	"github.com/spf13/cobra"
 	"io"
@@ -36,6 +37,15 @@ var prep = &cobra.Command{
 		req, err := exchange.NewRequest(ex.Request, exchange.TemplatedBody(prof, exchange.VariableSet(vars)))
 		if err != nil {
 			return err
+		}
+		hooks, err := plug.LoadRequestHooks("./")
+		if err != nil {
+			return err
+		}
+		for _, hook := range hooks {
+			if err := hook.OnRequest(ex, req); err != nil {
+				return err
+			}
 		}
 
 		fmt.Printf("URL: %s\n", req.URL)
