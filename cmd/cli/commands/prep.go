@@ -7,10 +7,11 @@ import (
 )
 
 var prep = &cobra.Command{
-	Use:     "prepare",
-	Aliases: []string{"prep"},
-	Short:   "prepares a request without executing it and writes the result to stdout",
-	Args:    cobra.ExactArgs(1),
+	Use:        "prepare",
+	Aliases:    []string{"prep"},
+	Short:      "prepares a request without executing it and writes the result to stdout",
+	Args:       cobra.ExactArgs(1),
+	ArgAliases: []string{"exchange configuration file"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vars, err := cmd.Flags().GetStringSlice("var")
 		if err != nil {
@@ -33,6 +34,6 @@ var prep = &cobra.Command{
 }
 
 func init() {
-	prep.Flags().StringSlice("var", nil, "sets a variable for the request body")
+	prep.Flags().StringSlice("var", nil, "set variables for the request body, ex: --var id=1")
 	root.AddCommand(prep)
 }

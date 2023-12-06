@@ -102,6 +102,7 @@ var sw = &cobra.Command{
 
 var cp = &cobra.Command{
 	Use:        "copy",
+	Short:      "copies the source profiles values to the destination profile",
 	Aliases:    []string{"cp"},
 	Args:       cobra.ExactArgs(2),
 	ArgAliases: []string{"src", "dst"},
