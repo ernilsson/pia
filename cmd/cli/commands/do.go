@@ -3,14 +3,13 @@ package commands
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"net/http"
 	"os"
 )
 
-var prep = &cobra.Command{
-	Use:     "prepare",
-	Aliases: []string{"prep"},
-	Short:   "prepares a request without executing it and writes the result to stdout",
-	Args:    cobra.ExactArgs(1),
+var do = &cobra.Command{
+	Use:  "do",
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vars, err := cmd.Flags().GetStringSlice("var")
 		if err != nil {
@@ -28,11 +27,15 @@ var prep = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return WriteRequest(os.Stdout, req)
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		return WriteResponse(os.Stdout, res)
 	},
 }
 
 func init() {
-	prep.Flags().StringSlice("var", nil, "sets a variable for the request body")
-	root.AddCommand(prep)
+	do.Flags().StringSlice("var", nil, "sets a variable for the request body")
+	root.AddCommand(do)
 }

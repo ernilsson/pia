@@ -2,6 +2,7 @@ package commands
 
 import (
 	"errors"
+	"fmt"
 	"github.com/ernilsson/pia/profile"
 	"github.com/spf13/cobra"
 	"os"
@@ -29,6 +30,16 @@ var prof = &cobra.Command{
 		}
 		if err := store.Save(p); err != nil {
 			return err
+		}
+		pr, err := cmd.Flags().GetBool("print")
+		if err != nil {
+			return err
+		}
+		if !pr {
+			return nil
+		}
+		for key, val := range p {
+			fmt.Printf("%s: %v\n", key, val)
 		}
 		return nil
 	},
@@ -148,8 +159,9 @@ var rm = &cobra.Command{
 
 func init() {
 	root.AddCommand(prof)
-	prof.Flags().StringSliceP("set", "s", nil, "defines a key-value pair to be set on the currently active profile, ex: --set username=root")
-	prof.Flags().StringSliceP("delete", "d", nil, "defines a key to be deleted from the currently active profile, ex: --del username")
+	prof.Flags().StringSliceP("set", "s", nil, "key-value pairs to be set on the currently active profile, ex: -s username=root")
+	prof.Flags().StringSliceP("delete", "d", nil, "keys to be deleted from the currently active profile, ex: -d username")
+	prof.Flags().BoolP("print", "p", false, "prints the profile after all other potential changes have been applied")
 	prof.AddCommand(sw)
 	prof.AddCommand(rm)
 

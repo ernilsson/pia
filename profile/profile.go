@@ -12,7 +12,6 @@ import (
 )
 
 var (
-	ErrProfileValueNotFound   = errors.New("profile value not found")
 	ErrNoActiveProfileSet     = errors.New("no active profile set")
 	ErrBadActiveProfileFormat = errors.New("bad active profile file format")
 )
@@ -99,7 +98,7 @@ func (p Profile) SetName(name string) {
 func (p Profile) Get(key string) (any, error) {
 	v, ok := p[key]
 	if !ok {
-		return nil, ErrProfileValueNotFound
+		return nil, fmt.Errorf("profile value '%s' not found", key)
 	}
 	return v, nil
 }
