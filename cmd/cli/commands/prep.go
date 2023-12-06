@@ -17,11 +17,12 @@ var prep = &cobra.Command{
 	Short:   "prepares a request without executing it and writes the result to stdout",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		prof, err := profile.UnmarshalActive()
+		wd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
-		wd, err := os.Getwd()
+		store := profile.NewFileStore(wd)
+		prof, err := store.LoadActive()
 		if err != nil {
 			return err
 		}
@@ -29,12 +30,16 @@ var prep = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		target := args[0]
-		ex, err := exchange.GetExchange(exchange.FileProvider(fmt.Sprintf("%s/%s", wd, target)), prof, vars)
+		target := fmt.Sprintf("%s/%s", wd, args[0])
+		ex, err := exchange.GetExchange(
+			exchange.FileProvider(target),
+			exchange.TemplatedConfiguration(prof),
+		)
 		if err != nil {
 			return err
 		}
-		req, err := exchange.NewRequest(ex.Request, exchange.TemplatedBody(prof, exchange.VariableSet(vars)))
+		ex.ContextRoot = target
+		req, err := exchange.NewRequest(ex.Request, exchange.TemplatedBody(prof, vars))
 		if err != nil {
 			return err
 		}
@@ -63,7 +68,7 @@ var prep = &cobra.Command{
 	},
 }
 
-func parseVariables(cmd *cobra.Command) (map[string]any, error) {
+func parseVariables(cmd *cobra.Command) (exchange.VariableSet, error) {
 	raw, err := cmd.Flags().GetStringSlice("var")
 	if err != nil {
 		return nil, err

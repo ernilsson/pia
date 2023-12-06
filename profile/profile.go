@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	ErrProfileValueNotFound       = errors.New("profile value not found")
-	ErrNoActiveProfileSet         = errors.New("no active profile set")
-	ErrBadActiveProfileFileFormat = errors.New("bad active profile file format")
+	ErrProfileValueNotFound   = errors.New("profile value not found")
+	ErrNoActiveProfileSet     = errors.New("no active profile set")
+	ErrBadActiveProfileFormat = errors.New("bad active profile file format")
 )
 
 func Bootstrap(wd string) error {
@@ -70,20 +70,30 @@ func ActiveProfileName(wd string) (string, error) {
 		return "", ErrNoActiveProfileSet
 	}
 	if len(strings.Split(profile, " ")) > 1 {
-		return "", ErrBadActiveProfileFileFormat
+		return "", ErrBadActiveProfileFormat
 	}
 	return profile, nil
+}
+
+func New(name string) Profile {
+	profile := make(Profile)
+	profile["profile"] = name
+	return profile
 }
 
 type Profile map[string]any
 
 func (p Profile) Name() string {
 	for k, v := range p {
-		if k == "Name" {
+		if k == "profile" {
 			return v.(string)
 		}
 	}
 	return ""
+}
+
+func (p Profile) SetName(name string) {
+	p["profile"] = name
 }
 
 func (p Profile) Get(key string) (any, error) {
@@ -104,10 +114,6 @@ func (p Profile) GetString(key string) (string, error) {
 		return "", errors.New("tried to fetch non-string value as string")
 	}
 	return s, nil
-}
-
-func (p Profile) Put(key string, value any) {
-	p[key] = value
 }
 
 func (p Profile) SubstituteLine(line string) (string, error) {

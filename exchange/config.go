@@ -4,13 +4,27 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/ernilsson/pia/profile"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"regexp"
 	"strings"
 )
+
+type PreProcessor func(raw []byte) ([]byte, error)
+
+func TemplatedConfiguration(sub ...SubstitutionSource) PreProcessor {
+	return func(raw []byte) ([]byte, error) {
+		var err error
+		for _, s := range sub {
+			raw, err = s.SubstituteLines(raw)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return raw, nil
+	}
+}
 
 type ProviderFunc func() ([]byte, error)
 
@@ -30,25 +44,27 @@ func FileProvider(path string) ProviderFunc {
 	}
 }
 
-func GetExchange(pf ProviderFunc, p profile.Profile, vars VariableSet) (Exchange, error) {
-	data, err := pf()
+func GetExchange(provider ProviderFunc, processors ...PreProcessor) (Exchange, error) {
+	data, err := provider()
 	if err != nil {
 		return Exchange{}, err
 	}
-	data, err = p.SubstituteLines(data)
-	if err != nil {
-		return Exchange{}, err
+	for _, processor := range processors {
+		data, err = processor(data)
+		if err != nil {
+			return Exchange{}, err
+		}
 	}
 	var ex Exchange
 	if err := yaml.Unmarshal(data, &ex); err != nil {
 		return Exchange{}, err
 	}
-	ex.Request.Body.Variables = vars
 	return ex, nil
 }
 
 type Exchange struct {
-	Request RequestConfiguration `yaml:"request"`
+	ContextRoot string
+	Request     RequestConfiguration `yaml:"request"`
 }
 
 type RequestConfiguration struct {

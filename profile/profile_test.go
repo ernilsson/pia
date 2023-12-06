@@ -172,15 +172,15 @@ func Test_ActiveProfile_GivenBadlyFormattedFile_ReturnsBadActiveProfileFileForma
 		t.Errorf("expected an error but got none")
 		return
 	}
-	if !errors.Is(err, ErrBadActiveProfileFileFormat) {
+	if !errors.Is(err, ErrBadActiveProfileFormat) {
 		t.Errorf("expected bad active profile format error but got: %s", err)
 	}
 }
 
 func Test_Profile_SubstituteLine_GivenLineWithMultipleSubstitutions_ReturnsSubstitutedLine(t *testing.T) {
 	profile := Profile{}
-	profile.Put("env", "dev")
-	profile.Put("age", 25)
+	profile["env"] = "dev"
+	profile["age"] = 25
 
 	line := "This test is in ${profile.env} and I am ${profile.age} years old"
 	actual, err := profile.SubstituteLine(line)
@@ -196,8 +196,8 @@ func Test_Profile_SubstituteLine_GivenLineWithMultipleSubstitutions_ReturnsSubst
 
 func Test_Profile_SubstituteLine_GivenLineWithSingleSubstitution_ReturnsSubstitutedLine(t *testing.T) {
 	profile := Profile{}
-	profile.Put("env", "dev")
-	profile.Put("age", 25)
+	profile["env"] = "dev"
+	profile["age"] = 25
 
 	line := "This test is in ${profile.env}"
 	actual, err := profile.SubstituteLine(line)
@@ -228,7 +228,7 @@ func Test_Profile_SubstituteLine_GivenLineWithNoSubstitutions_ReturnsOriginalStr
 
 func Test_Profile_SubstituteLine_WhenSubstitutionVariableDoesNotExist_ReturnsError(t *testing.T) {
 	profile := Profile{}
-	profile.Put("env", "dev")
+	profile["env"] = "dev"
 
 	line := "This test is in ${profile.env} and I am ${profile.age} years old"
 	actual, err := profile.SubstituteLine(line)
