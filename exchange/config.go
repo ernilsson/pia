@@ -63,8 +63,7 @@ func GetExchange(provider ProviderFunc, processors ...PreProcessor) (Exchange, e
 }
 
 type Exchange struct {
-	ContextRoot string
-	Request     RequestConfiguration `yaml:"request"`
+	Request RequestConfiguration `yaml:"request"`
 }
 
 type RequestConfiguration struct {
@@ -79,7 +78,7 @@ type BodyConfiguration struct {
 	Variables    VariableSet
 }
 
-type VariableSet map[string]any
+type VariableSet map[string]string
 
 func (v VariableSet) SubstituteLines(data []byte) ([]byte, error) {
 	buf := new(bytes.Buffer)
@@ -114,14 +113,14 @@ func (v VariableSet) SubstituteLine(line string) (string, error) {
 	return line, nil
 }
 
-func (v VariableSet) resolve(key string) (any, error) {
+func (v VariableSet) resolve(key string) (string, error) {
 	segments := strings.Split(key, ":")
 	if len(segments) > 2 {
-		return nil, fmt.Errorf("malformed key for variable '%s'", key)
+		return "", fmt.Errorf("malformed key for variable '%s'", key)
 	}
 	val, ok := v[segments[0]]
 	if !ok && len(segments) < 2 {
-		return nil, fmt.Errorf("variable '%s' not set and has no default value", key)
+		return "", fmt.Errorf("variable '%s' not set and has no default value", key)
 	}
 	if !ok {
 		return segments[1], nil

@@ -39,7 +39,7 @@ func SetProfileValuesHandler(cmd *cobra.Command, p profile.Profile) error {
 	if err != nil {
 		return err
 	}
-	sets, err := ExtractKeyValues(set)
+	sets, err := ParseKeyValues(set)
 	if err != nil {
 		return err
 	}
@@ -131,11 +131,27 @@ var cp = &cobra.Command{
 	},
 }
 
+var rm = &cobra.Command{
+	Use:        "remove",
+	Aliases:    []string{"rm"},
+	Args:       cobra.ExactArgs(1),
+	ArgAliases: []string{"name"},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		store := profile.NewFileStore(wd)
+		return store.Delete(args[0])
+	},
+}
+
 func init() {
 	root.AddCommand(prof)
 	prof.Flags().StringSliceP("set", "s", nil, "defines a key-value pair to be set on the currently active profile, ex: --set username=root")
 	prof.Flags().StringSliceP("delete", "d", nil, "defines a key to be deleted from the currently active profile, ex: --del username")
 	prof.AddCommand(sw)
+	prof.AddCommand(rm)
 
 	cp.Flags().BoolP("merge", "m", false, "merges the source profile into the destination profile if the destination profile already exists")
 	prof.AddCommand(cp)

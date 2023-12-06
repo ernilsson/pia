@@ -6,9 +6,7 @@ import (
 	"github.com/ernilsson/pia/plug"
 	"github.com/ernilsson/pia/profile"
 	"github.com/spf13/cobra"
-	"io"
 	"os"
-	"strings"
 )
 
 var prep = &cobra.Command{
@@ -26,20 +24,22 @@ var prep = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		vars, err := parseVariables(cmd)
-		if err != nil {
-			return err
-		}
-		target := fmt.Sprintf("%s/%s", wd, args[0])
 		ex, err := exchange.GetExchange(
-			exchange.FileProvider(target),
+			exchange.FileProvider(fmt.Sprintf("%s/%s", wd, args[0])),
 			exchange.TemplatedConfiguration(prof),
 		)
 		if err != nil {
 			return err
 		}
-		ex.ContextRoot = target
-		req, err := exchange.NewRequest(ex.Request, exchange.TemplatedBody(prof, vars))
+		vars, err := cmd.Flags().GetStringSlice("var")
+		if err != nil {
+			return err
+		}
+		vs, err := ParseKeyValues(vars)
+		if err != nil {
+			return err
+		}
+		req, err := exchange.NewRequest(ex.Request, exchange.TemplatedBody(prof, exchange.VariableSet(vs)))
 		if err != nil {
 			return err
 		}
@@ -53,32 +53,8 @@ var prep = &cobra.Command{
 			}
 		}
 
-		fmt.Printf("URL: %s\n", req.URL)
-		fmt.Printf("Method: %s\n", req.Method)
-		for key, v := range req.Header {
-			fmt.Printf("%s: %s\n", key, v[0])
-		}
-		fmt.Println()
-		parsed, err := io.ReadAll(req.Body)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(parsed))
-		return nil
+		return WriteRequest(os.Stdout, req)
 	},
-}
-
-func parseVariables(cmd *cobra.Command) (exchange.VariableSet, error) {
-	raw, err := cmd.Flags().GetStringSlice("var")
-	if err != nil {
-		return nil, err
-	}
-	vars := make(map[string]any)
-	for _, kv := range raw {
-		split := strings.Split(kv, "=")
-		vars[split[0]] = split[1]
-	}
-	return vars, nil
 }
 
 func init() {

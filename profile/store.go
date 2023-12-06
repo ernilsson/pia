@@ -11,11 +11,11 @@ import (
 
 type Store interface {
 	SetActive(name string) error
-	Active() (string, error)
 
 	LoadActive() (Profile, error)
 	Load(name string) (Profile, error)
 	Save(profile Profile) error
+	Delete(name string) error
 }
 
 func Marshall(profile Profile) ([]byte, error) {
@@ -56,7 +56,7 @@ func (f FileStore) SetActive(name string) error {
 	return nil
 }
 
-func (f FileStore) Active() (string, error) {
+func (f FileStore) active() (string, error) {
 	file, err := os.Open(f.activeFilePath())
 	if err != nil {
 		return "", err
@@ -86,7 +86,7 @@ func (f FileStore) activeFilePath() string {
 }
 
 func (f FileStore) LoadActive() (Profile, error) {
-	active, err := f.Active()
+	active, err := f.active()
 	if err != nil {
 		return Profile{}, err
 	}
@@ -159,6 +159,19 @@ func (f FileStore) Save(profile Profile) error {
 		return err
 	}
 	profiles[profile.Name()] = profile
+	return f.write(profiles)
+}
+
+func (f FileStore) Delete(name string) error {
+	profiles, err := f.load()
+	if err != nil {
+		return err
+	}
+	delete(profiles, name)
+	return f.write(profiles)
+}
+
+func (f FileStore) write(profiles map[string]Profile) error {
 	file, err := os.OpenFile(f.storeFilePath(), os.O_WRONLY, os.ModeAppend)
 	if err != nil {
 		return err
