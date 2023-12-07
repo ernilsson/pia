@@ -7,6 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 )
@@ -63,7 +64,14 @@ func GetExchange(provider ProviderFunc, processors ...PreProcessor) (Exchange, e
 }
 
 type Exchange struct {
+	ConfigRoot string
+
+	Version string               `yaml:"version"`
 	Request RequestConfiguration `yaml:"request"`
+}
+
+func (ex Exchange) InConfigRoot(filename string) string {
+	return path.Join(ex.ConfigRoot, filename)
 }
 
 type RequestConfiguration struct {
@@ -74,7 +82,7 @@ type RequestConfiguration struct {
 }
 
 type BodyConfiguration struct {
-	TemplateFile string `yaml:"template"`
+	TemplateFile string `yaml:"file"`
 	Variables    VariableSet
 }
 
@@ -128,11 +136,11 @@ func (v VariableSet) resolve(key string) (string, error) {
 	return val, nil
 }
 
-func (bc BodyConfiguration) Template() ([]byte, error) {
-	if bc.empty() {
+func (ex Exchange) RequestBody() ([]byte, error) {
+	if ex.Request.Body.empty() {
 		return nil, nil
 	}
-	f, err := os.OpenFile(bc.TemplateFile, os.O_RDONLY, os.ModeAppend)
+	f, err := os.OpenFile(ex.InConfigRoot(ex.Request.Body.TemplateFile), os.O_RDONLY, os.ModeAppend)
 	if err != nil {
 		return nil, err
 	}

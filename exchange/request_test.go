@@ -13,7 +13,7 @@ func Test_NewRequest_CopiesHeaderToRequest(t *testing.T) {
 			"X-Custom-Header": "test-header",
 		},
 	}
-	req, err := NewRequest(config)
+	req, err := NewRequest(Exchange{Request: config})
 	if err != nil {
 		t.Errorf("got unexpected error: %s", err)
 		return
@@ -32,7 +32,7 @@ func Test_NewRequest_SetsRequestMethod(t *testing.T) {
 	config := RequestConfiguration{
 		Method: "POST",
 	}
-	req, err := NewRequest(config)
+	req, err := NewRequest(Exchange{Request: config})
 	if err != nil {
 		t.Errorf("got unexpected error: %s", err)
 		return
@@ -43,7 +43,7 @@ func Test_NewRequest_SetsRequestMethod(t *testing.T) {
 	}
 
 	config.Method = "PATCH"
-	req, err = NewRequest(config)
+	req, err = NewRequest(Exchange{Request: config})
 	if err != nil {
 		t.Errorf("got unexpected error: %s", err)
 		return
@@ -58,7 +58,7 @@ func Test_NewRequest_SetsURL(t *testing.T) {
 	config := RequestConfiguration{
 		URL: "https://test.com/endpoint",
 	}
-	req, err := NewRequest(config)
+	req, err := NewRequest(Exchange{Request: config})
 	if err != nil {
 		t.Errorf("got unexpected error: %s", err)
 		return
@@ -71,10 +71,10 @@ func Test_NewRequest_SetsURL(t *testing.T) {
 
 func Test_NewRequest_GivenErroneousOption_ReturnsError(t *testing.T) {
 	config := RequestConfiguration{}
-	opt := NewRequestOption(func(rc RequestConfiguration, req *http.Request) error {
+	opt := NewRequestOption(func(ex Exchange, req *http.Request) error {
 		return errors.New("mocked error")
 	})
-	_, err := NewRequest(config, opt)
+	_, err := NewRequest(Exchange{Request: config}, opt)
 	if err == nil {
 		t.Errorf("expected error but got nil")
 		return

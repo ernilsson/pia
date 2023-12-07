@@ -1,12 +1,14 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"github.com/ernilsson/pia/exchange"
 	"github.com/ernilsson/pia/profile"
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -20,6 +22,34 @@ func ParseKeyValues(pairs []string) (map[string]string, error) {
 		kv[key] = val
 	}
 	return kv, nil
+}
+
+func DiscoverExchangeFile(input string) (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	file := path.Join(wd, input)
+	info, err := os.Stat(file)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", err
+	} else if err != nil {
+		file = path.Join(wd, fmt.Sprintf("%s.yml", input))
+		info, err = os.Stat(file)
+	}
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", err
+	} else if err != nil {
+		file = path.Join(wd, fmt.Sprintf("%s.yaml", input))
+		info, err = os.Stat(file)
+	}
+	if err != nil {
+		return "", err
+	}
+	if info.IsDir() {
+		return DiscoverExchangeFile(fmt.Sprintf("%s/config", input))
+	}
+	return file, nil
 }
 
 func PrepareRequest(filepath string, vars map[string]string) (*http.Request, error) {
@@ -39,7 +69,8 @@ func PrepareRequest(filepath string, vars map[string]string) (*http.Request, err
 	if err != nil {
 		return nil, err
 	}
-	return exchange.NewRequest(ex.Request, exchange.TemplatedBody(prof, exchange.VariableSet(vars)))
+	ex.ConfigRoot = path.Dir(filepath)
+	return exchange.NewRequest(ex, exchange.TemplatedBody(prof, exchange.VariableSet(vars)))
 }
 
 func WriteRequest(w io.Writer, req *http.Request) error {

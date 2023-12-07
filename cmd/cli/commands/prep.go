@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -21,11 +20,11 @@ var prep = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		wd, err := os.Getwd()
+		filepath, err := DiscoverExchangeFile(args[0])
 		if err != nil {
 			return err
 		}
-		req, err := PrepareRequest(fmt.Sprintf("%s/%s", wd, args[0]), vs)
+		req, err := PrepareRequest(filepath, vs)
 		if err != nil {
 			return err
 		}

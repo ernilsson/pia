@@ -10,11 +10,11 @@ type SubstitutionSource interface {
 	SubstituteLines(data []byte) ([]byte, error)
 }
 
-type NewRequestOption func(rc RequestConfiguration, req *http.Request) error
+type NewRequestOption func(ex Exchange, req *http.Request) error
 
 func TemplatedBody(src ...SubstitutionSource) NewRequestOption {
-	return func(rc RequestConfiguration, req *http.Request) error {
-		body, err := rc.Body.Template()
+	return func(ex Exchange, req *http.Request) error {
+		body, err := ex.RequestBody()
 		if err != nil {
 			return err
 		}
@@ -29,16 +29,16 @@ func TemplatedBody(src ...SubstitutionSource) NewRequestOption {
 	}
 }
 
-func NewRequest(rc RequestConfiguration, opts ...NewRequestOption) (*http.Request, error) {
-	req, err := http.NewRequest(rc.Method, rc.URL, nil)
+func NewRequest(ex Exchange, opts ...NewRequestOption) (*http.Request, error) {
+	req, err := http.NewRequest(ex.Request.Method, ex.Request.URL, nil)
 	if err != nil {
 		return nil, err
 	}
-	for key, value := range rc.Headers {
+	for key, value := range ex.Request.Headers {
 		req.Header[key] = []string{value}
 	}
 	for _, opt := range opts {
-		if err := opt(rc, req); err != nil {
+		if err := opt(ex, req); err != nil {
 			return nil, err
 		}
 	}
