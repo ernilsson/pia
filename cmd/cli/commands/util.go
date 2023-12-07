@@ -30,18 +30,20 @@ func DiscoverExchangeFile(input string) (string, error) {
 		return "", err
 	}
 	file := path.Join(wd, input)
-	info, err := os.Stat(file)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
+	info, ok, err := FileExists(file)
+	if err != nil {
 		return "", err
-	} else if err != nil {
-		file = path.Join(wd, fmt.Sprintf("%s.yml", input))
-		info, err = os.Stat(file)
 	}
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
+	if !ok {
+		file = path.Join(wd, fmt.Sprintf("%s.yml", input))
+		info, ok, err = FileExists(file)
+	}
+	if err != nil {
 		return "", err
-	} else if err != nil {
+	}
+	if !ok {
 		file = path.Join(wd, fmt.Sprintf("%s.yaml", input))
-		info, err = os.Stat(file)
+		info, ok, err = FileExists(file)
 	}
 	if err != nil {
 		return "", err
@@ -50,6 +52,16 @@ func DiscoverExchangeFile(input string) (string, error) {
 		return DiscoverExchangeFile(fmt.Sprintf("%s/config", input))
 	}
 	return file, nil
+}
+
+func FileExists(filepath string) (os.FileInfo, bool, error) {
+	info, err := os.Stat(filepath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, false, err
+	} else if err != nil && errors.Is(err, os.ErrNotExist) {
+		return nil, false, nil
+	}
+	return info, true, nil
 }
 
 func PrepareRequest(filepath string, vars map[string]string) (*http.Request, error) {
