@@ -34,24 +34,30 @@ func DiscoverExchangeFile(input string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if !ok {
-		file = path.Join(wd, fmt.Sprintf("%s.yml", input))
-		info, ok, err = FileExists(file)
+	if ok && info.IsDir() {
+		return DiscoverExchangeFile(path.Join(input, "config"))
+	} else if ok {
+		return file, nil
 	}
+
+	file = path.Join(wd, fmt.Sprintf("%s.yml", input))
+	info, ok, err = FileExists(file)
 	if err != nil {
 		return "", err
 	}
-	if !ok {
-		file = path.Join(wd, fmt.Sprintf("%s.yaml", input))
-		info, ok, err = FileExists(file)
+	if ok {
+		return file, nil
 	}
+
+	file = path.Join(wd, fmt.Sprintf("%s.yaml", input))
+	info, ok, err = FileExists(file)
 	if err != nil {
 		return "", err
 	}
-	if info.IsDir() {
-		return DiscoverExchangeFile(fmt.Sprintf("%s/config", input))
+	if ok {
+		return file, nil
 	}
-	return file, nil
+	return "", errors.New("config file not found")
 }
 
 func FileExists(filepath string) (os.FileInfo, bool, error) {
