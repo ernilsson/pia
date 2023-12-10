@@ -37,24 +37,24 @@ func DiscoverExchangeFile(fp string) (string, error) {
 	return attempt, nil
 }
 
-type FilePathMutator func(filepath string) string
+type FilePathMutator func(fp string) string
 
 func Exact() FilePathMutator {
-	return func(filepath string) string {
-		return filepath
+	return func(fp string) string {
+		return fp
 	}
 }
 
-func Extension(extension string) FilePathMutator {
-	return func(filepath string) string {
-		return fmt.Sprintf("%s.%s", filepath, extension)
+func Extension(ext string) FilePathMutator {
+	return func(fp string) string {
+		return fmt.Sprintf("%s.%s", fp, ext)
 	}
 }
 
-func DiscoverFile(filepath string, opts ...FilePathMutator) (string, error) {
+func DiscoverFile(fp string, opts ...FilePathMutator) (string, error) {
 	opts = append(opts, Exact())
 	for _, mut := range opts {
-		mutated := mut(filepath)
+		mutated := mut(fp)
 		info, err := os.Stat(mutated)
 		if err == nil && !info.IsDir() {
 			return mutated, nil
