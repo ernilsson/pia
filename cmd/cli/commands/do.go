@@ -1,10 +1,12 @@
 package commands
 
 import (
-	"fmt"
+	"github.com/ernilsson/pia/exchange"
+	"github.com/ernilsson/pia/profile"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"
+	"path"
 )
 
 var do = &cobra.Command{
@@ -13,22 +15,34 @@ var do = &cobra.Command{
 	Args:       cobra.ExactArgs(1),
 	ArgAliases: []string{"exchange configuration file"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		vars, err := cmd.Flags().GetStringSlice("var")
+		raw, err := cmd.Flags().GetStringSlice("var")
 		if err != nil {
 			return err
 		}
-		vs, err := ParseKeyValues(vars)
-		if err != nil {
-			return err
-		}
+		vars := MustParse(ParseKeyValues(raw))
 		wd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
-		req, err := PrepareRequest(fmt.Sprintf("%s/%s", wd, args[0]), vs)
+		filepath, err := DiscoverExchangeFile(path.Join("wd", args[0]))
+		store := profile.NewFileStore(wd)
+		prof, err := store.LoadActive()
 		if err != nil {
 			return err
 		}
+		ex, err := exchange.GetExchange(
+			exchange.FileProvider(filepath),
+			exchange.TemplatedConfiguration(prof),
+		)
+		if err != nil {
+			return err
+		}
+		ex.ConfigRoot = path.Dir(filepath)
+		req, err := exchange.NewRequest(ex, exchange.TemplatedBody(prof, exchange.VariableSet(vars)))
+		if err != nil {
+			return err
+		}
+
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err

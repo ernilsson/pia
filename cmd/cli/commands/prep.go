@@ -1,8 +1,11 @@
 package commands
 
 import (
+	"github.com/ernilsson/pia/exchange"
+	"github.com/ernilsson/pia/profile"
 	"github.com/spf13/cobra"
 	"os"
+	"path"
 )
 
 var prep = &cobra.Command{
@@ -12,19 +15,34 @@ var prep = &cobra.Command{
 	Args:       cobra.ExactArgs(1),
 	ArgAliases: []string{"exchange configuration file"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		vars, err := cmd.Flags().GetStringSlice("var")
+		raw, err := cmd.Flags().GetStringSlice("var")
 		if err != nil {
 			return err
 		}
-		vs, err := ParseKeyValues(vars)
+		vars := MustParse(ParseKeyValues(raw))
+
+		wd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
-		filepath, err := DiscoverExchangeFile(args[0])
+		filepath, err := DiscoverExchangeFile(path.Join(wd, args[0]))
 		if err != nil {
 			return err
 		}
-		req, err := PrepareRequest(filepath, vs)
+		store := profile.NewFileStore(wd)
+		prof, err := store.LoadActive()
+		if err != nil {
+			return err
+		}
+		ex, err := exchange.GetExchange(
+			exchange.FileProvider(filepath),
+			exchange.TemplatedConfiguration(prof),
+		)
+		if err != nil {
+			return err
+		}
+		ex.ConfigRoot = path.Dir(filepath)
+		req, err := exchange.NewRequest(ex, exchange.TemplatedBody(prof, exchange.VariableSet(vars)))
 		if err != nil {
 			return err
 		}

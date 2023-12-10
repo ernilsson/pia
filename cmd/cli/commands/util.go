@@ -3,14 +3,19 @@ package commands
 import (
 	"errors"
 	"fmt"
-	"github.com/ernilsson/pia/exchange"
-	"github.com/ernilsson/pia/profile"
 	"io"
 	"net/http"
 	"os"
 	"path"
 	"strings"
 )
+
+func MustParse(vars map[string]string, err error) map[string]string {
+	if err != nil {
+		panic(err)
+	}
+	return vars
+}
 
 func ParseKeyValues(pairs []string) (map[string]string, error) {
 	kv := make(map[string]string)
@@ -25,37 +30,32 @@ func ParseKeyValues(pairs []string) (map[string]string, error) {
 }
 
 func DiscoverExchangeFile(input string) (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-	file := path.Join(wd, input)
-	info, ok, err := FileExists(file)
+	info, ok, err := FileExists(input)
 	if err != nil {
 		return "", err
 	}
 	if ok && info.IsDir() {
 		return DiscoverExchangeFile(path.Join(input, "config"))
 	} else if ok {
-		return file, nil
+		return input, nil
 	}
 
-	file = path.Join(wd, fmt.Sprintf("%s.yml", input))
-	info, ok, err = FileExists(file)
+	yml := fmt.Sprintf("%s.yml", input)
+	info, ok, err = FileExists(yml)
 	if err != nil {
 		return "", err
 	}
 	if ok {
-		return file, nil
+		return yml, nil
 	}
 
-	file = path.Join(wd, fmt.Sprintf("%s.yaml", input))
-	info, ok, err = FileExists(file)
+	yaml := fmt.Sprintf("%s.yaml", input)
+	info, ok, err = FileExists(yaml)
 	if err != nil {
 		return "", err
 	}
 	if ok {
-		return file, nil
+		return yaml, nil
 	}
 	return "", errors.New("config file not found")
 }
@@ -68,27 +68,6 @@ func FileExists(filepath string) (os.FileInfo, bool, error) {
 		return nil, false, nil
 	}
 	return info, true, nil
-}
-
-func PrepareRequest(filepath string, vars map[string]string) (*http.Request, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-	store := profile.NewFileStore(wd)
-	prof, err := store.LoadActive()
-	if err != nil {
-		return nil, err
-	}
-	ex, err := exchange.GetExchange(
-		exchange.FileProvider(filepath),
-		exchange.TemplatedConfiguration(prof),
-	)
-	if err != nil {
-		return nil, err
-	}
-	ex.ConfigRoot = path.Dir(filepath)
-	return exchange.NewRequest(ex, exchange.TemplatedBody(prof, exchange.VariableSet(vars)))
 }
 
 func WriteRequest(w io.Writer, req *http.Request) error {

@@ -62,12 +62,12 @@ func Test_DiscoverExchangeFile_GivenExistingFileAsInput_ReturnsAbsolutePathOfInp
 		}
 	}()
 
-	actual, err := DiscoverExchangeFile("./configuration")
+	wd, err := os.Getwd()
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 		return
 	}
-	wd, err := os.Getwd()
+	actual, err := DiscoverExchangeFile(path.Join(wd, "configuration"))
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 		return
@@ -96,12 +96,12 @@ func Test_DiscoverExchangeFile_WhenYMLIsOmitted_ReturnsAbsolutePathOfFileWithExt
 		}
 	}()
 
-	actual, err := DiscoverExchangeFile("./configuration")
+	wd, err := os.Getwd()
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 		return
 	}
-	wd, err := os.Getwd()
+	actual, err := DiscoverExchangeFile(path.Join(wd, "configuration"))
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 		return
@@ -130,12 +130,12 @@ func Test_DiscoverExchangeFile_WhenYAMLIsOmitted_ReturnsAbsolutePathOfFileWithEx
 		}
 	}()
 
-	actual, err := DiscoverExchangeFile("./configuration")
+	wd, err := os.Getwd()
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 		return
 	}
-	wd, err := os.Getwd()
+	actual, err := DiscoverExchangeFile(path.Join(wd, "configuration"))
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 		return
@@ -171,12 +171,12 @@ func Test_DiscoverExchangeFile_GivenDirectoryWithConfigYAMLInside_ReturnsAbsolut
 		}
 	}()
 
-	actual, err := DiscoverExchangeFile("./req")
+	wd, err := os.Getwd()
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 		return
 	}
-	wd, err := os.Getwd()
+	actual, err := DiscoverExchangeFile(path.Join(wd, "req"))
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 		return
@@ -199,7 +199,12 @@ func Test_DiscoverExchangeFile_GivenDirectoryWithoutConfigYAMLInside_ReturnsErro
 		}
 	}()
 
-	_, err := DiscoverExchangeFile("./req")
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+		return
+	}
+	_, err = DiscoverExchangeFile(path.Join(wd, "req"))
 	if err == nil {
 		t.Error("expected error but got nil")
 		return
@@ -207,7 +212,12 @@ func Test_DiscoverExchangeFile_GivenDirectoryWithoutConfigYAMLInside_ReturnsErro
 }
 
 func Test_DiscoverExchangeFile_GivenNonExistentFile_ReturnsError(t *testing.T) {
-	_, err := DiscoverExchangeFile("./config")
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+		return
+	}
+	_, err = DiscoverExchangeFile(path.Join(wd, "config"))
 	if err == nil {
 		t.Error("expected error but got nil")
 		return
