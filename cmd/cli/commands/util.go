@@ -78,6 +78,9 @@ func WriteRequest(w io.Writer, req *http.Request) error {
 	if _, err := fmt.Fprintln(w); err != nil {
 		return err
 	}
+	if req.Body == nil {
+		return nil
+	}
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return err
