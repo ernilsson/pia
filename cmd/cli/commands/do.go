@@ -25,7 +25,7 @@ var do = &cobra.Command{
 			return err
 		}
 		filepath, err := DiscoverExchangeFile(path.Join("wd", args[0]))
-		store := profile.NewFileStore(wd)
+		store := profile.Must(profile.NewFileStore(wd))
 		prof, err := store.LoadActive()
 		if err != nil {
 			return err

@@ -17,7 +17,7 @@ var prof = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		store := profile.NewFileStore(wd)
+		store := profile.Must(profile.NewFileStore(wd))
 		p, err := store.LoadActive()
 		if err != nil {
 			return err
@@ -83,7 +83,7 @@ var sw = &cobra.Command{
 			return err
 		}
 		name := args[0]
-		store := profile.NewFileStore(wd)
+		store := profile.Must(profile.NewFileStore(wd))
 		p, err := store.Load(name)
 		if err != nil && errors.Is(err, profile.ErrProfileNotFound) {
 			p = profile.New(name)
@@ -111,7 +111,7 @@ var cp = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		store := profile.NewFileStore(wd)
+		store := profile.Must(profile.NewFileStore(wd))
 		sp, err := store.Load(args[0])
 		if err != nil {
 			return err
@@ -153,7 +153,7 @@ var rm = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		store := profile.NewFileStore(wd)
+		store := profile.Must(profile.NewFileStore(wd))
 		return store.Delete(args[0])
 	},
 }

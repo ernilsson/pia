@@ -29,7 +29,7 @@ var prep = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		store := profile.NewFileStore(wd)
+		store := profile.Must(profile.NewFileStore(wd))
 		prof, err := store.LoadActive()
 		if err != nil {
 			return err

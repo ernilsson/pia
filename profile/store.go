@@ -3,16 +3,18 @@ package profile
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"strings"
 )
 
 type Store interface {
 	SetActive(name string) error
-
 	LoadActive() (Profile, error)
+
 	Load(name string) (Profile, error)
 	Save(profile Profile) error
 	Delete(name string) error
@@ -28,8 +30,41 @@ func Marshall(profile Profile) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func NewFileStore(wd string) FileStore {
-	return FileStore{wd: wd}
+func Must(store FileStore, err error) FileStore {
+	if err != nil {
+		panic(err)
+	}
+	return store
+}
+
+func NewFileStore(wd string) (FileStore, error) {
+	if err := bootstrap(wd, ".profile"); err != nil {
+		return FileStore{}, err
+	}
+	if err := bootstrap(wd, ".profiles"); err != nil {
+		return FileStore{}, err
+	}
+	return FileStore{wd: wd}, nil
+}
+
+func bootstrap(wd string, filename string) error {
+	_, err := os.Stat(path.Join(wd, filename))
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	f, err := os.Create(path.Join(wd, filename))
+	if err != nil {
+		return err
+	}
+	defer func(f *os.File) {
+		if err := f.Close(); err != nil {
+			panic(err)
+		}
+	}(f)
+	return nil
 }
 
 type FileStore struct {
