@@ -1,12 +1,11 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -29,45 +28,39 @@ func ParseKeyValues(pairs []string) (map[string]string, error) {
 	return kv, nil
 }
 
-func DiscoverExchangeFile(input string) (string, error) {
-	info, ok, err := FileExists(input)
+func DiscoverExchangeFile(fp string) (string, error) {
+	opts := []FilePathMutator{Extension("yml"), Extension("yaml")}
+	attempt, err := DiscoverFile(fp, opts...)
 	if err != nil {
-		return "", err
+		return DiscoverFile(filepath.Join(fp, "config"), opts...)
 	}
-	if ok && info.IsDir() {
-		return DiscoverExchangeFile(path.Join(input, "config"))
-	} else if ok {
-		return input, nil
-	}
-
-	yml := fmt.Sprintf("%s.yml", input)
-	info, ok, err = FileExists(yml)
-	if err != nil {
-		return "", err
-	}
-	if ok {
-		return yml, nil
-	}
-
-	yaml := fmt.Sprintf("%s.yaml", input)
-	info, ok, err = FileExists(yaml)
-	if err != nil {
-		return "", err
-	}
-	if ok {
-		return yaml, nil
-	}
-	return "", errors.New("config file not found")
+	return attempt, nil
 }
 
-func FileExists(filepath string) (os.FileInfo, bool, error) {
-	info, err := os.Stat(filepath)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return nil, false, err
-	} else if err != nil && errors.Is(err, os.ErrNotExist) {
-		return nil, false, nil
+type FilePathMutator func(filepath string) string
+
+func Exact() FilePathMutator {
+	return func(filepath string) string {
+		return filepath
 	}
-	return info, true, nil
+}
+
+func Extension(extension string) FilePathMutator {
+	return func(filepath string) string {
+		return fmt.Sprintf("%s.%s", filepath, extension)
+	}
+}
+
+func DiscoverFile(filepath string, opts ...FilePathMutator) (string, error) {
+	opts = append(opts, Exact())
+	for _, mut := range opts {
+		mutated := mut(filepath)
+		info, err := os.Stat(mutated)
+		if err == nil && !info.IsDir() {
+			return mutated, nil
+		}
+	}
+	return "", os.ErrNotExist
 }
 
 func WriteRequest(w io.Writer, req *http.Request) error {
