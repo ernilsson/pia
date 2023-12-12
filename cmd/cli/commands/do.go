@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/ernilsson/pia/exchange"
+	"github.com/ernilsson/pia/hook"
 	"github.com/ernilsson/pia/profile"
 	"github.com/spf13/cobra"
 	"net/http"
@@ -38,13 +39,21 @@ var do = &cobra.Command{
 			return err
 		}
 		ex.ConfigRoot = path.Dir(filepath)
+		if err := hook.BeforeRequestPrepared(&ex); err != nil {
+			return err
+		}
 		req, err := exchange.NewRequest(ex, exchange.TemplatedBody(prof, exchange.VariableSet(vars)))
 		if err != nil {
 			return err
 		}
-
+		if err := hook.BeforeRequestDispatched(&ex, req); err != nil {
+			return err
+		}
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
+			return err
+		}
+		if err := hook.OnResponse(&ex, res); err != nil {
 			return err
 		}
 		return WriteResponse(os.Stdout, res)

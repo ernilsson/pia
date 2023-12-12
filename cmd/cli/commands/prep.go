@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/ernilsson/pia/exchange"
+	"github.com/ernilsson/pia/hook"
 	"github.com/ernilsson/pia/profile"
 	"github.com/spf13/cobra"
 	"os"
@@ -42,8 +43,14 @@ var prep = &cobra.Command{
 			return err
 		}
 		ex.ConfigRoot = path.Dir(filepath)
+		if err := hook.BeforeRequestPrepared(&ex); err != nil {
+			return err
+		}
 		req, err := exchange.NewRequest(ex, exchange.TemplatedBody(prof, exchange.VariableSet(vars)))
 		if err != nil {
+			return err
+		}
+		if err := hook.BeforeRequestDispatched(&ex, req); err != nil {
 			return err
 		}
 		return WriteRequest(os.Stdout, req)
