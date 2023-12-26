@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/ernilsson/pia/cmd/cli/commands"
+	"github.com/ernilsson/pia/cmd/cli/command"
 	"github.com/ernilsson/pia/exchange"
 	"github.com/spf13/cobra"
 	"regexp"
@@ -99,7 +99,7 @@ func BodyPreProcessorFactory(ctx context.Context, cmd *cobra.Command) (exchange.
 }
 
 func OnInit() error {
-	commands.Prepare.Flags().StringSliceP("variable", "v", nil, "sets a variable")
-	commands.Do.Flags().StringSliceP("variable", "v", nil, "sets a variable")
+	command.Prepare.Flags().StringSliceP("variable", "v", nil, "sets a variable")
+	command.Do.Flags().StringSliceP("variable", "v", nil, "sets a variable")
 	return nil
 }

@@ -11,7 +11,7 @@ import (
 	"path"
 )
 
-var do = &cobra.Command{
+var Do = &cobra.Command{
 	Use:        "do",
 	Short:      "executes a request and writes the response to stdout",
 	Args:       cobra.ExactArgs(1),
@@ -72,5 +72,5 @@ var do = &cobra.Command{
 }
 
 func init() {
-	Root.AddCommand(do)
+	Root.AddCommand(Do)
 }
