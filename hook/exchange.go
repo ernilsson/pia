@@ -8,10 +8,10 @@ import (
 	"net/http"
 )
 
-const pluginDir = "/usr/local/bin/pia-plug/"
+const dir = "/etc/pia/plugins"
 
 func OnInit() error {
-	plugins, err := load(pluginDir)
+	plugins, err := load(dir)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func OnInit() error {
 }
 
 func GetExchangePreProcessors(ctx context.Context, cmd *cobra.Command) ([]exchange.PreProcessor, error) {
-	plugins, err := load(pluginDir)
+	plugins, err := load(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func GetExchangePreProcessors(ctx context.Context, cmd *cobra.Command) ([]exchan
 }
 
 func GetBodyPreProcessors(ctx context.Context, cmd *cobra.Command) ([]exchange.PreProcessor, error) {
-	plugins, err := load(pluginDir)
+	plugins, err := load(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func GetBodyPreProcessors(ctx context.Context, cmd *cobra.Command) ([]exchange.P
 }
 
 func BeforeRequestPrepared(ctx context.Context, cmd *cobra.Command, ex *exchange.Exchange) error {
-	plugins, err := load(pluginDir)
+	plugins, err := load(dir)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func BeforeRequestPrepared(ctx context.Context, cmd *cobra.Command, ex *exchange
 }
 
 func BeforeRequestDispatched(ctx context.Context, cmd *cobra.Command, ex *exchange.Exchange, r *http.Request) error {
-	plugins, err := load(pluginDir)
+	plugins, err := load(dir)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func BeforeRequestDispatched(ctx context.Context, cmd *cobra.Command, ex *exchan
 }
 
 func OnResponse(ctx context.Context, cmd *cobra.Command, ex *exchange.Exchange, r *http.Response) error {
-	plugins, err := load(pluginDir)
+	plugins, err := load(dir)
 	if err != nil {
 		return err
 	}
