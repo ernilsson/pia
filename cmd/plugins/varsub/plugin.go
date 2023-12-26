@@ -100,5 +100,6 @@ func BodyPreProcessorFactory(ctx context.Context, cmd *cobra.Command) (exchange.
 
 func OnInit() error {
 	commands.Prepare.Flags().StringSliceP("variable", "v", nil, "sets a variable")
+	commands.Do.Flags().StringSliceP("variable", "v", nil, "sets a variable")
 	return nil
 }
