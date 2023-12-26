@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/ernilsson/pia/cmd/cli/command"
 	"github.com/ernilsson/pia/hook"
 )
 
