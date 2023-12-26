@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/ernilsson/pia/exchange"
 	"github.com/ernilsson/pia/hook"
 	"github.com/ernilsson/pia/profile"
@@ -9,18 +10,14 @@ import (
 	"path"
 )
 
-var prep = &cobra.Command{
+var Prepare = &cobra.Command{
 	Use:        "prepare",
-	Aliases:    []string{"prep"},
+	Aliases:    []string{"Prepare"},
 	Short:      "prepares a request without executing it and writes the result to stdout",
 	Args:       cobra.ExactArgs(1),
 	ArgAliases: []string{"exchange configuration file"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		raw, err := cmd.Flags().GetStringSlice("var")
-		if err != nil {
-			return err
-		}
-		vars := MustParse(ParseKeyValues(raw))
+		ctx := context.Background()
 
 		wd, err := os.Getwd()
 		if err != nil {
@@ -35,22 +32,35 @@ var prep = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		processors, err := hook.GetExchangePreProcessors(ctx, cmd)
+		if err != nil {
+			return err
+		}
 		ex, err := exchange.GetExchange(
 			exchange.FileProvider(filepath),
-			exchange.TemplatedConfiguration(prof),
+			append(processors, exchange.TemplatedConfiguration(prof))...,
 		)
 		if err != nil {
 			return err
 		}
 		ex.ConfigRoot = path.Dir(filepath)
-		if err := hook.BeforeRequestPrepared(&ex); err != nil {
+		if err := hook.BeforeRequestPrepared(ctx, cmd, &ex); err != nil {
 			return err
 		}
-		req, err := exchange.NewRequest(ex, exchange.TemplatedBody(prof, exchange.VariableSet(vars)))
+		processors, err = hook.GetBodyPreProcessors(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		if err := hook.BeforeRequestDispatched(&ex, req); err != nil {
+		req, err := exchange.NewRequest(
+			ex,
+			exchange.PreProcessedBody(
+				append(processors, exchange.SubstitutionPreProcessor(prof))...,
+			),
+		)
+		if err != nil {
+			return err
+		}
+		if err := hook.BeforeRequestDispatched(ctx, cmd, &ex, req); err != nil {
 			return err
 		}
 		return WriteRequest(os.Stdout, req)
@@ -58,6 +68,5 @@ var prep = &cobra.Command{
 }
 
 func init() {
-	prep.Flags().StringSlice("var", nil, "set variables for the request body, ex: --var id=1")
-	root.AddCommand(prep)
+	Root.AddCommand(Prepare)
 }

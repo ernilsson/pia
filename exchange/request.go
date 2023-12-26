@@ -12,14 +12,20 @@ type SubstitutionSource interface {
 
 type NewRequestOption func(ex Exchange, req *http.Request) error
 
-func TemplatedBody(src ...SubstitutionSource) NewRequestOption {
+func SubstitutionPreProcessor(src SubstitutionSource) PreProcessor {
+	return func(raw []byte) ([]byte, error) {
+		return src.SubstituteLines(raw)
+	}
+}
+
+func PreProcessedBody(processors ...PreProcessor) NewRequestOption {
 	return func(ex Exchange, req *http.Request) error {
 		body, err := ex.RequestBody()
 		if err != nil {
 			return err
 		}
-		for _, sub := range src {
-			body, err = sub.SubstituteLines(body)
+		for _, processor := range processors {
+			body, err = processor(body)
 			if err != nil {
 				return err
 			}

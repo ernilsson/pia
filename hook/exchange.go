@@ -1,20 +1,85 @@
 package hook
 
 import (
+	"context"
 	"errors"
 	"github.com/ernilsson/pia/exchange"
+	"github.com/spf13/cobra"
 	"net/http"
 )
 
 const pluginDir = "/usr/local/bin/pia-plug/"
 
-type BeforeRequestPreparedHook func(*exchange.Exchange) error
+func OnInit() error {
+	plugins, err := load(pluginDir)
+	if err != nil {
+		return err
+	}
+	for _, p := range plugins {
+		h, err := p.Lookup("OnInit")
+		if err != nil {
+			continue
+		}
+		hook, ok := h.(func() error)
+		if !ok {
+			return errors.New("invalid OnInit hook installed")
+		}
+		if err := hook(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-type BeforeRequestDispatchedHook func(*exchange.Exchange, *http.Request) error
+func GetExchangePreProcessors(ctx context.Context, cmd *cobra.Command) ([]exchange.PreProcessor, error) {
+	plugins, err := load(pluginDir)
+	if err != nil {
+		return nil, err
+	}
+	processors := make([]exchange.PreProcessor, 0)
+	for _, p := range plugins {
+		h, err := p.Lookup("ExchangePreProcessorFactory")
+		if err != nil {
+			continue
+		}
+		factory, ok := h.(func(context.Context, *cobra.Command) (exchange.PreProcessor, error))
+		if !ok {
+			return nil, errors.New("invalid ExchangePreProcessorFactory installed")
+		}
+		processor, err := factory(ctx, cmd)
+		if err != nil {
+			return nil, err
+		}
+		processors = append(processors, processor)
+	}
+	return processors, nil
+}
 
-type OnResponseHook func(*exchange.Exchange, *http.Response) error
+func GetBodyPreProcessors(ctx context.Context, cmd *cobra.Command) ([]exchange.PreProcessor, error) {
+	plugins, err := load(pluginDir)
+	if err != nil {
+		return nil, err
+	}
+	processors := make([]exchange.PreProcessor, 0)
+	for _, p := range plugins {
+		h, err := p.Lookup("BodyPreProcessorFactory")
+		if err != nil {
+			continue
+		}
+		factory, ok := h.(func(context.Context, *cobra.Command) (exchange.PreProcessor, error))
+		if !ok {
+			return nil, errors.New("invalid BodyPreProcessorFactory installed")
+		}
+		processor, err := factory(ctx, cmd)
+		if err != nil {
+			return nil, err
+		}
+		processors = append(processors, processor)
+	}
+	return processors, nil
+}
 
-func BeforeRequestPrepared(ex *exchange.Exchange) error {
+func BeforeRequestPrepared(ctx context.Context, cmd *cobra.Command, ex *exchange.Exchange) error {
 	plugins, err := load(pluginDir)
 	if err != nil {
 		return err
@@ -24,18 +89,18 @@ func BeforeRequestPrepared(ex *exchange.Exchange) error {
 		if err != nil {
 			continue
 		}
-		hook, ok := h.(BeforeRequestPreparedHook)
+		hook, ok := h.(func(context.Context, *cobra.Command, *exchange.Exchange) error)
 		if !ok {
 			return errors.New("invalid BeforeRequestPrepared hook installed")
 		}
-		if err := hook(ex); err != nil {
+		if err := hook(ctx, cmd, ex); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func BeforeRequestDispatched(ex *exchange.Exchange, r *http.Request) error {
+func BeforeRequestDispatched(ctx context.Context, cmd *cobra.Command, ex *exchange.Exchange, r *http.Request) error {
 	plugins, err := load(pluginDir)
 	if err != nil {
 		return err
@@ -45,18 +110,18 @@ func BeforeRequestDispatched(ex *exchange.Exchange, r *http.Request) error {
 		if err != nil {
 			continue
 		}
-		hook, ok := h.(BeforeRequestDispatchedHook)
+		hook, ok := h.(func(context.Context, *cobra.Command, *exchange.Exchange, *http.Request) error)
 		if !ok {
 			return errors.New("invalid BeforeRequestDispatched hook installed")
 		}
-		if err := hook(ex, r); err != nil {
+		if err := hook(ctx, cmd, ex, r); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func OnResponse(ex *exchange.Exchange, r *http.Response) error {
+func OnResponse(ctx context.Context, cmd *cobra.Command, ex *exchange.Exchange, r *http.Response) error {
 	plugins, err := load(pluginDir)
 	if err != nil {
 		return err
@@ -66,11 +131,11 @@ func OnResponse(ex *exchange.Exchange, r *http.Response) error {
 		if err != nil {
 			continue
 		}
-		hook, ok := h.(OnResponseHook)
+		hook, ok := h.(func(context.Context, *cobra.Command, *exchange.Exchange, *http.Response) error)
 		if !ok {
 			return errors.New("invalid OnResponse hook installed")
 		}
-		if err := hook(ex, r); err != nil {
+		if err := hook(ctx, cmd, ex, r); err != nil {
 			return err
 		}
 	}
