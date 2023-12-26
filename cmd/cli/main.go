@@ -1,7 +1,13 @@
 package main
 
-import "github.com/ernilsson/pia/internal/cmd"
+import (
+	"github.com/ernilsson/pia/cmd/cli/command"
+	"github.com/ernilsson/pia/hook"
+)
 
 func main() {
-	cmd.Execute()
+	if err := hook.OnInit(); err != nil {
+		panic(err)
+	}
+	command.Execute()
 }
