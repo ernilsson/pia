@@ -1,4 +1,4 @@
-package commands
+package command
 
 import (
 	"fmt"
@@ -6,14 +6,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var version = &cobra.Command{
+var Version = &cobra.Command{
 	Use:   "version",
-	Short: "currently installed pia version",
+	Short: "currently installed pia Version",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("pia pre-release")
 	},
 }
 
 func init() {
-	root.AddCommand(version)
+	Root.AddCommand(Version)
 }

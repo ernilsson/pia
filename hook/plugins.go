@@ -1,4 +1,4 @@
-package plug
+package hook
 
 import (
 	"io/fs"

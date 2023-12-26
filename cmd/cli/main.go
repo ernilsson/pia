@@ -1,9 +1,12 @@
 package main
 
 import (
-	"github.com/ernilsson/pia/cmd/cli/commands"
+	"github.com/ernilsson/pia/hook"
 )
 
 func main() {
-	commands.Execute()
+	if err := hook.OnInit(); err != nil {
+		panic(err)
+	}
+	command.Execute()
 }

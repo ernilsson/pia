@@ -1,4 +1,4 @@
-package commands
+package command
 
 import (
 	"github.com/ernilsson/pia/profile"
@@ -27,5 +27,5 @@ var initialize = &cobra.Command{
 }
 
 func init() {
-	root.AddCommand(initialize)
+	Root.AddCommand(initialize)
 }

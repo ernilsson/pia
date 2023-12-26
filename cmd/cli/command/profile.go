@@ -1,4 +1,4 @@
-package commands
+package command
 
 import (
 	"errors"
@@ -159,8 +159,8 @@ var rm = &cobra.Command{
 }
 
 func init() {
-	root.AddCommand(prof)
-	prof.Flags().StringSliceP("set", "s", nil, "key-value pairs to be set on the currently active profile, ex: -s username=root")
+	Root.AddCommand(prof)
+	prof.Flags().StringSliceP("set", "s", nil, "key-value pairs to be set on the currently active profile, ex: -s username=Root")
 	prof.Flags().StringSliceP("delete", "d", nil, "keys to be deleted from the currently active profile, ex: -d username")
 	prof.Flags().BoolP("print", "p", false, "prints the profile after all other potential changes have been applied")
 	prof.AddCommand(sw)
