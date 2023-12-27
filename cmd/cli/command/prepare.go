@@ -2,12 +2,9 @@ package command
 
 import (
 	"context"
-	"github.com/ernilsson/pia/exchange"
-	"github.com/ernilsson/pia/hook"
-	"github.com/ernilsson/pia/profile"
+	"github.com/ernilsson/pia/app"
 	"github.com/spf13/cobra"
 	"os"
-	"path"
 )
 
 var Prepare = &cobra.Command{
@@ -17,50 +14,17 @@ var Prepare = &cobra.Command{
 	Args:       cobra.ExactArgs(1),
 	ArgAliases: []string{"exchange configuration file"},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		a, err := app.New()
+		if err != nil {
+			return err
+		}
 		ctx := context.Background()
-
-		wd, err := os.Getwd()
+		ex, err := a.LoadExchange(ctx, args[0], cmd)
 		if err != nil {
 			return err
 		}
-		filepath, err := DiscoverExchangeFile(path.Join(wd, args[0]))
+		req, err := a.Prepare(ctx, ex, cmd)
 		if err != nil {
-			return err
-		}
-		store := profile.Must(profile.NewFileStore(wd))
-		prof, err := store.LoadActive()
-		if err != nil {
-			return err
-		}
-		processors, err := hook.GetExchangePreProcessors(ctx, cmd)
-		if err != nil {
-			return err
-		}
-		ex, err := exchange.GetExchange(
-			exchange.FileProvider(filepath),
-			append(processors, exchange.TemplatedConfiguration(prof))...,
-		)
-		if err != nil {
-			return err
-		}
-		ex.ConfigRoot = path.Dir(filepath)
-		if err := hook.BeforeRequestPrepared(ctx, cmd, &ex); err != nil {
-			return err
-		}
-		processors, err = hook.GetBodyPreProcessors(ctx, cmd)
-		if err != nil {
-			return err
-		}
-		req, err := exchange.NewRequest(
-			ex,
-			exchange.PreProcessedBody(
-				append(processors, exchange.SubstitutionPreProcessor(prof))...,
-			),
-		)
-		if err != nil {
-			return err
-		}
-		if err := hook.BeforeRequestDispatched(ctx, cmd, &ex, req); err != nil {
 			return err
 		}
 		return WriteRequest(os.Stdout, req)

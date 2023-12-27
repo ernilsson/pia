@@ -22,24 +22,6 @@ func TemplatedConfiguration(sub ...SubstitutionSource) PreProcessor {
 	}
 }
 
-type ProviderFunc func() ([]byte, error)
-
-func FileProvider(path string) ProviderFunc {
-	return func() ([]byte, error) {
-		f, err := os.OpenFile(path, os.O_RDONLY, os.ModeAppend)
-		if err != nil {
-			return nil, err
-		}
-		defer func(f *os.File) {
-			err := f.Close()
-			if err != nil {
-				panic(err)
-			}
-		}(f)
-		return io.ReadAll(f)
-	}
-}
-
 func GetExchange(provider ProviderFunc, processors ...PreProcessor) (Exchange, error) {
 	data, err := provider()
 	if err != nil {

@@ -4,17 +4,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 )
-
-func MustParse(vars map[string]string, err error) map[string]string {
-	if err != nil {
-		panic(err)
-	}
-	return vars
-}
 
 func ParseKeyValues(pairs []string) (map[string]string, error) {
 	kv := make(map[string]string)
@@ -26,41 +17,6 @@ func ParseKeyValues(pairs []string) (map[string]string, error) {
 		kv[key] = val
 	}
 	return kv, nil
-}
-
-func DiscoverExchangeFile(fp string) (string, error) {
-	opts := []FilePathMutator{Extension("yml"), Extension("yaml")}
-	attempt, err := DiscoverFile(fp, opts...)
-	if err != nil {
-		return DiscoverFile(filepath.Join(fp, "config"), opts...)
-	}
-	return attempt, nil
-}
-
-type FilePathMutator func(fp string) string
-
-func Exact() FilePathMutator {
-	return func(fp string) string {
-		return fp
-	}
-}
-
-func Extension(ext string) FilePathMutator {
-	return func(fp string) string {
-		return fmt.Sprintf("%s.%s", fp, ext)
-	}
-}
-
-func DiscoverFile(fp string, opts ...FilePathMutator) (string, error) {
-	opts = append(opts, Exact())
-	for _, mut := range opts {
-		mutated := mut(fp)
-		info, err := os.Stat(mutated)
-		if err == nil && !info.IsDir() {
-			return mutated, nil
-		}
-	}
-	return "", os.ErrNotExist
 }
 
 func WriteRequest(w io.Writer, req *http.Request) error {
