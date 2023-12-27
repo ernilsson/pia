@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	if err := plugin.OnInit(); err != nil {
+	if err := plugin.NewHookService().Must().OnInit(); err != nil {
 		panic(err)
 	}
 	command.Execute()

@@ -5,74 +5,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
-	"os"
 	"regexp"
-	"strings"
 )
 
 var (
 	ErrNoActiveProfileSet     = errors.New("no active profile set")
 	ErrBadActiveProfileFormat = errors.New("bad active profile file format")
 )
-
-func Bootstrap(wd string) error {
-	f, err := os.Create(fmt.Sprintf("%s/.profile", wd))
-	if err != nil {
-		return err
-	}
-	defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
-			panic(err)
-		}
-	}(f)
-	return nil
-}
-
-func SetActiveProfileName(wd string, profile string) error {
-	f, err := os.OpenFile(fmt.Sprintf("%s/.profile", wd), os.O_WRONLY, os.ModeAppend)
-	if err != nil {
-		return err
-	}
-	defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
-			panic(err)
-		}
-	}(f)
-
-	if _, err := f.WriteString(profile); err != nil {
-		return err
-	}
-	return nil
-}
-
-func ActiveProfileName(wd string) (string, error) {
-	f, err := os.Open(fmt.Sprintf("%s/.profile", wd))
-	if err != nil {
-		return "", err
-	}
-	defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
-			panic(err)
-		}
-	}(f)
-
-	raw, err := io.ReadAll(f)
-	if err != nil {
-		return "", err
-	}
-	profile := strings.TrimSpace(string(raw))
-	if profile == "" {
-		return "", ErrNoActiveProfileSet
-	}
-	if len(strings.Split(profile, " ")) > 1 {
-		return "", ErrBadActiveProfileFormat
-	}
-	return profile, nil
-}
 
 func New(name string) Profile {
 	profile := make(Profile)

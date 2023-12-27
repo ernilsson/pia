@@ -12,6 +12,7 @@ import (
 )
 
 type Store interface {
+	Must(Profile, error) Profile
 	SetActive(name string) error
 	LoadActive() (Profile, error)
 
@@ -126,6 +127,13 @@ func (f FileStore) LoadActive() (Profile, error) {
 		return Profile{}, err
 	}
 	return f.Load(active)
+}
+
+func (f FileStore) Must(profile Profile, err error) Profile {
+	if err != nil {
+		panic(err)
+	}
+	return profile
 }
 
 func (f FileStore) Load(name string) (Profile, error) {

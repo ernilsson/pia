@@ -19,6 +19,13 @@ func ParseKeyValues(pairs []string) (map[string]string, error) {
 	return kv, nil
 }
 
+func must(wd string, err error) string {
+	if err != nil {
+		panic(err)
+	}
+	return wd
+}
+
 func WriteRequest(w io.Writer, req *http.Request) error {
 	if _, err := fmt.Fprintf(w, "URL: %s\n", req.URL); err != nil {
 		return err
