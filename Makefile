@@ -9,3 +9,7 @@ varsub:
 	go build -buildmode=plugin -o varsub.so cmd/plugins/varsub/*.go
 	mkdir -p /etc/pia/plugins
 	mv varsub.so /etc/pia/plugins
+
+purge-plugins:
+	set -e
+	rm /etc/pia/plugins/*.so

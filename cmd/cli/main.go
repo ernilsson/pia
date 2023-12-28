@@ -2,11 +2,11 @@ package main
 
 import (
 	"github.com/ernilsson/pia/cmd/cli/command"
-	"github.com/ernilsson/pia/hook"
+	"github.com/ernilsson/pia/plugin"
 )
 
 func main() {
-	if err := hook.OnInit(); err != nil {
+	if err := plugin.NewHookService().Must().OnInit(); err != nil {
 		panic(err)
 	}
 	command.Execute()

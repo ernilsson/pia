@@ -13,10 +13,7 @@ var initialize = &cobra.Command{
 	Args:       cobra.ExactArgs(1),
 	ArgAliases: []string{"initial profile name"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
+		wd := must(os.Getwd())
 		store := profile.Must(profile.NewFileStore(wd))
 		prof := profile.New(args[0])
 		if err := store.Save(prof); err != nil {

@@ -6,6 +6,7 @@ import (
 	"github.com/ernilsson/pia/profile"
 	"github.com/spf13/cobra"
 	"os"
+	"strings"
 )
 
 var prof = &cobra.Command{
@@ -13,20 +14,25 @@ var prof = &cobra.Command{
 	Short:   "manages current profile values",
 	Aliases: []string{"prof", "pf"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
+		wd := must(os.Getwd())
 		store := profile.Must(profile.NewFileStore(wd))
 		p, err := store.LoadActive()
 		if err != nil {
 			return err
 		}
-		if err := SetProfileValuesHandler(cmd, p); err != nil {
+		sets, err := GetStringMap(cmd, "set")
+		if err != nil {
 			return err
 		}
-		if err := DeleteProfileValuesHandler(cmd, p); err != nil {
+		for key, val := range sets {
+			p[key] = val
+		}
+		unsets, err := GetStringMap(cmd, "delete")
+		if err != nil {
 			return err
+		}
+		for key, _ := range unsets {
+			delete(p, key)
 		}
 		if err := store.Save(p); err != nil {
 			return err
@@ -45,43 +51,33 @@ var prof = &cobra.Command{
 	},
 }
 
-func SetProfileValuesHandler(cmd *cobra.Command, p profile.Profile) error {
-	set, err := cmd.Flags().GetStringSlice("set")
+func GetStringMap(cmd *cobra.Command, name string) (map[string]string, error) {
+	raw, err := cmd.Flags().GetStringSlice(name)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	sets, err := ParseKeyValues(set)
-	if err != nil {
-		return err
-	}
-	for key, val := range sets {
-		p[key] = val
-	}
-	return nil
+	return ParseKeyValues(raw)
 }
 
-func DeleteProfileValuesHandler(cmd *cobra.Command, p profile.Profile) error {
-	del, err := cmd.Flags().GetStringSlice("delete")
-	if err != nil {
-		return err
+func ParseKeyValues(pairs []string) (map[string]string, error) {
+	kv := make(map[string]string)
+	for _, pair := range pairs {
+		key, val, ok := strings.Cut(pair, "=")
+		if !ok {
+			return nil, fmt.Errorf("invalid pair '%s'", pair)
+		}
+		kv[key] = val
 	}
-	for _, key := range del {
-		delete(p, key)
-	}
-	return nil
+	return kv, nil
 }
 
-var sw = &cobra.Command{
-	Use:        "switch",
-	Aliases:    []string{"sw"},
+var use = &cobra.Command{
+	Use:        "use",
 	Short:      "sets the active profile for the current project",
 	Args:       cobra.ExactArgs(1),
-	ArgAliases: []string{"name"},
+	ArgAliases: []string{"profile"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
+		wd := must(os.Getwd())
 		name := args[0]
 		store := profile.Must(profile.NewFileStore(wd))
 		p, err := store.Load(name)
@@ -107,10 +103,7 @@ var cp = &cobra.Command{
 	Args:       cobra.ExactArgs(2),
 	ArgAliases: []string{"src", "dst"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
+		wd := must(os.Getwd())
 		store := profile.Must(profile.NewFileStore(wd))
 		sp, err := store.Load(args[0])
 		if err != nil {
@@ -149,10 +142,7 @@ var rm = &cobra.Command{
 	Args:       cobra.ExactArgs(1),
 	ArgAliases: []string{"name"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
+		wd := must(os.Getwd())
 		store := profile.Must(profile.NewFileStore(wd))
 		return store.Delete(args[0])
 	},
@@ -163,7 +153,7 @@ func init() {
 	prof.Flags().StringSliceP("set", "s", nil, "key-value pairs to be set on the currently active profile, ex: -s username=Root")
 	prof.Flags().StringSliceP("delete", "d", nil, "keys to be deleted from the currently active profile, ex: -d username")
 	prof.Flags().BoolP("print", "p", false, "prints the profile after all other potential changes have been applied")
-	prof.AddCommand(sw)
+	prof.AddCommand(use)
 	prof.AddCommand(rm)
 
 	cp.Flags().BoolP("merge", "m", false, "merges the source profile into the destination profile if the destination profile already exists")
