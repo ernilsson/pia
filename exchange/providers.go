@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 type ProviderFunc func() ([]byte, error)
@@ -24,16 +25,18 @@ func FileProvider(path string) ProviderFunc {
 	}
 }
 
-func DiscoveringFileProvider(path string) (ProviderFunc, error) {
+// DiscoveringFileProvider traverses file system and looks for a candidate to use as a file provider. Returns the
+// directory of the found file, the provider and a potential error.
+func DiscoveringFileProvider(path string) (string, ProviderFunc, error) {
 	mutators := []filePathMutator{exact(), extension("yml"), extension("yaml")}
 	for _, mut := range mutators {
 		mutated := mut(path)
 		info, err := os.Stat(mutated)
 		if err == nil && !info.IsDir() {
-			return FileProvider(mutated), nil
+			return filepath.Dir(mutated), FileProvider(mutated), nil
 		}
 	}
-	return nil, os.ErrNotExist
+	return "", nil, os.ErrNotExist
 }
 
 type filePathMutator func(fp string) string

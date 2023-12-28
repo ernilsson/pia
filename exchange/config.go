@@ -23,6 +23,13 @@ func AdaptSubstitution(sub SubstitutionSource) PreProcessor {
 
 type NewExchangeOption func(ex *Exchange) error
 
+func ConfigRoot(path string) NewExchangeOption {
+	return func(ex *Exchange) error {
+		ex.ConfigRoot = path
+		return nil
+	}
+}
+
 func ConfigurationPreProcessor(pp PreProcessor) NewExchangeOption {
 	return func(ex *Exchange) error {
 		data, err := yaml.Marshal(ex)

@@ -2,10 +2,12 @@ package command
 
 import (
 	"context"
+	"fmt"
 	"github.com/ernilsson/pia/exchange"
 	"github.com/ernilsson/pia/plugin"
 	"github.com/ernilsson/pia/profile"
 	"github.com/spf13/cobra"
+	"io"
 	"net/http"
 	"os"
 )
@@ -52,7 +54,7 @@ type ExchangeFactory struct {
 }
 
 func (e ExchangeFactory) Create(ctx context.Context, cmd *cobra.Command, file string) (exchange.Exchange, error) {
-	provider, err := exchange.DiscoveringFileProvider(file)
+	root, provider, err := exchange.DiscoveringFileProvider(file)
 	if err != nil {
 		return exchange.Exchange{}, err
 	}
@@ -62,6 +64,7 @@ func (e ExchangeFactory) Create(ctx context.Context, cmd *cobra.Command, file st
 	for _, processor := range processors {
 		opts = append(opts, exchange.ConfigurationPreProcessor(processor))
 	}
+	opts = append(opts, exchange.ConfigRoot(root))
 	return exchange.NewExchange(provider, opts...)
 }
 
@@ -121,6 +124,49 @@ var Prepare = &cobra.Command{
 		}
 		return WriteRequest(os.Stdout, req)
 	},
+}
+
+func WriteRequest(w io.Writer, req *http.Request) error {
+	if _, err := fmt.Fprintf(w, "URL: %s\n", req.URL); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(w, "Method: %s\n", req.Method); err != nil {
+		return err
+	}
+	for key, v := range req.Header {
+		if _, err := fmt.Fprintf(w, "%s: %s\n", key, v[0]); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintln(w); err != nil {
+		return err
+	}
+	if req.Body == nil {
+		return nil
+	}
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(w, string(body))
+	return err
+}
+
+func WriteResponse(w io.Writer, res *http.Response) error {
+	for key, v := range res.Header {
+		if _, err := fmt.Fprintf(w, "%s: %s\n", key, v[0]); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintln(w); err != nil {
+		return err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(w, string(body))
+	return err
 }
 
 func init() {
