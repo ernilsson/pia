@@ -2,56 +2,105 @@ package main
 
 import (
 	"context"
-	"errors"
+	"github.com/ernilsson/pia/cmd/plugins/jshooks/internal"
 	"github.com/ernilsson/pia/exchange"
-	"github.com/robertkrimen/otto"
+	"github.com/ernilsson/pia/profile"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	"io"
+	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 )
 
-type HooksConfiguration struct {
-	BeforeRequestPrepared string `yaml:"before_request_prepared"`
+type HookConfiguration struct {
+	Hooks Hooks `yaml:"hooks"`
+}
+
+type Hooks struct {
+	BeforeRequestPrepared   string `yaml:"before_request_prepared"`
+	BeforeRequestDispatched string `yaml:"before_request_dispatched"`
+	OnResponse              string `yaml:"on_response"`
+}
+
+func loadScript(name string) ([]byte, error) {
+	script, err := os.OpenFile(name, os.O_RDONLY, os.ModeAppend)
+	if err != nil {
+		return nil, err
+	}
+	return io.ReadAll(script)
 }
 
 func BeforeRequestPrepared(ctx context.Context, cmd *cobra.Command, ex *exchange.Exchange) error {
-	file, err := os.OpenFile(filepath.Join(ex.ConfigRoot, "hooks.yml"), os.O_RDONLY, os.ModeAppend)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
-	} else if err != nil && errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
-	defer func() {
-		if err := file.Close(); err != nil {
-			panic(err)
-		}
-	}()
-	data, err := io.ReadAll(file)
+	data, loc, err := ex.Source()
 	if err != nil {
 		return err
 	}
-	var config HooksConfiguration
+	var config HookConfiguration
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return err
 	}
-	if config.BeforeRequestPrepared == "" {
+	if config.Hooks.BeforeRequestPrepared == "" {
 		return nil
 	}
-	script, err := os.OpenFile(path.Join(ex.ConfigRoot, config.BeforeRequestPrepared), os.O_RDONLY, os.ModeAppend)
+	src, err := loadScript(path.Join(path.Dir(loc), config.Hooks.BeforeRequestPrepared))
+	wd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	src, err := io.ReadAll(script)
+	vm, err := internal.New(ex, internal.ProfileSetter(profile.Must(profile.NewFileStore(wd))))
+	_, err = vm.Run(src)
+	return err
+}
+
+func BeforeRequestDispatched(ctx context.Context, cmd *cobra.Command, ex *exchange.Exchange, req *http.Request) error {
+	data, loc, err := ex.Source()
 	if err != nil {
 		return err
 	}
-	vm := otto.New()
-	if err := vm.Set("exchange", ex); err != nil {
+	var config HookConfiguration
+	if err := yaml.Unmarshal(data, &config); err != nil {
 		return err
 	}
+	if config.Hooks.BeforeRequestDispatched == "" {
+		return nil
+	}
+	src, err := loadScript(path.Join(path.Dir(loc), config.Hooks.BeforeRequestDispatched))
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	vm, err := internal.New(
+		ex,
+		internal.ProfileSetter(profile.Must(profile.NewFileStore(wd))),
+		internal.Value("request", req),
+	)
+	_, err = vm.Run(src)
+	return err
+}
+
+func OnResponse(ctx context.Context, cmd *cobra.Command, ex *exchange.Exchange, res *http.Response) error {
+	data, loc, err := ex.Source()
+	if err != nil {
+		return err
+	}
+	var config HookConfiguration
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return err
+	}
+	if config.Hooks.OnResponse == "" {
+		return nil
+	}
+	src, err := loadScript(path.Join(path.Dir(loc), config.Hooks.OnResponse))
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	vm, err := internal.New(
+		ex,
+		internal.ProfileSetter(profile.Must(profile.NewFileStore(wd))),
+		internal.Value("response", res),
+	)
 	_, err = vm.Run(src)
 	return err
 }

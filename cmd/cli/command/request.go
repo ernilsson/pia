@@ -54,18 +54,17 @@ type ExchangeFactory struct {
 }
 
 func (e ExchangeFactory) Create(ctx context.Context, cmd *cobra.Command, file string) (exchange.Exchange, error) {
-	root, provider, err := exchange.DiscoveringFileProvider(file)
+	provider, err := exchange.DiscoveringFileProvider(file)
 	if err != nil {
 		return exchange.Exchange{}, err
 	}
 	processors := e.augmenters.Must(e.augmenters.ExchangePreProcessors(ctx, cmd))
 	processors = append(processors, exchange.AdaptSubstitution(e.activeProfile))
-	opts := make([]exchange.NewExchangeOption, 0)
 	for _, processor := range processors {
-		opts = append(opts, exchange.ConfigurationPreProcessor(processor))
+		provider = exchange.PreProcessedProvider(provider, processor)
 	}
-	opts = append(opts, exchange.ConfigRoot(root))
-	return exchange.NewExchange(provider, opts...)
+	provider = exchange.CachedProvider(provider, exchange.NewSimpleCache())
+	return exchange.NewExchange(provider)
 }
 
 var Do = &cobra.Command{

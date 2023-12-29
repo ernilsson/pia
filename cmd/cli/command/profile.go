@@ -27,11 +27,11 @@ var prof = &cobra.Command{
 		for key, val := range sets {
 			p[key] = val
 		}
-		unsets, err := GetStringMap(cmd, "delete")
+		unsets, err := cmd.Flags().GetStringSlice("delete")
 		if err != nil {
 			return err
 		}
-		for key, _ := range unsets {
+		for _, key := range unsets {
 			delete(p, key)
 		}
 		if err := store.Save(p); err != nil {
