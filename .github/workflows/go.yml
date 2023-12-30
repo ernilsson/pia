@@ -23,6 +23,10 @@ jobs:
 
     - name: Build
       run: go build -v ./cmd/cli/main.go
+    - name: Build varsub
+      run: go build --buildmode=plugin -v ./cmd/plugins/varsub/*.go
+    - name: Build jshooks
+      run: go build --buildmode=plugin -v ./cmd/plugins/jshooks/*.go
 
     - name: Test
       run: go test -v ./...

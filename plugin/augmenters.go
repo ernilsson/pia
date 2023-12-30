@@ -38,7 +38,7 @@ func (s *AugmenterService) ExchangePreProcessors(ctx context.Context, cmd *cobra
 		}
 		factory, ok := h.(func(context.Context, *cobra.Command) (exchange.PreProcessor, error))
 		if !ok {
-			return nil, errors.New("invalid ExchangePreProcessorFactory installed")
+			return nil, errors.New("invalid ExchangePreProcessor plugin augmenter installed")
 		}
 		processor, err := factory(ctx, cmd)
 		if err != nil {
@@ -58,7 +58,7 @@ func (s *AugmenterService) BodyPreProcessors(ctx context.Context, cmd *cobra.Com
 		}
 		factory, ok := h.(func(context.Context, *cobra.Command) (exchange.PreProcessor, error))
 		if !ok {
-			return nil, errors.New("invalid BodyPreProcessorFactory installed")
+			return nil, errors.New("invalid BodyPreProcessor plugin augmenter installed")
 		}
 		processor, err := factory(ctx, cmd)
 		if err != nil {

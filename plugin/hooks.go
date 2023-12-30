@@ -49,7 +49,7 @@ func (s HookService) OnInit() error {
 		}
 		hook, ok := h.(func() error)
 		if !ok {
-			return errors.New("invalid OnInit plugin installed")
+			return errors.New("invalid OnInit plugin hook installed")
 		}
 		if err := hook(); err != nil {
 			return err
@@ -66,7 +66,7 @@ func (s HookService) BeforeRequestPrepared(ctx context.Context, cmd *cobra.Comma
 		}
 		hook, ok := h.(func(context.Context, *cobra.Command, *exchange.Exchange) error)
 		if !ok {
-			return errors.New("invalid BeforeRequestPrepared plugin installed")
+			return errors.New("invalid BeforeRequestPrepared plugin hook installed")
 		}
 		if err := hook(ctx, cmd, ex); err != nil {
 			return err
@@ -83,7 +83,7 @@ func (s HookService) BeforeRequestDispatched(ctx context.Context, cmd *cobra.Com
 		}
 		hook, ok := h.(func(context.Context, *cobra.Command, *exchange.Exchange, *http.Request) error)
 		if !ok {
-			return errors.New("invalid BeforeRequestDispatched plugin installed")
+			return errors.New("invalid BeforeRequestDispatched plugin hook installed")
 		}
 		if err := hook(ctx, cmd, ex, r); err != nil {
 			return err
@@ -100,7 +100,7 @@ func (s HookService) OnResponse(ctx context.Context, cmd *cobra.Command, ex *exc
 		}
 		hook, ok := h.(func(context.Context, *cobra.Command, *exchange.Exchange, *http.Response) error)
 		if !ok {
-			return errors.New("invalid OnResponse plugin installed")
+			return errors.New("invalid OnResponse plugin hook installed")
 		}
 		if err := hook(ctx, cmd, ex, r); err != nil {
 			return err

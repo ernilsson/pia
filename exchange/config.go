@@ -23,30 +23,14 @@ func AdaptSubstitution(sub SubstitutionSource) PreProcessor {
 
 type NewExchangeOption func(ex *Exchange) error
 
-func ConfigRoot(path string) NewExchangeOption {
-	return func(ex *Exchange) error {
-		ex.ConfigRoot = path
-		return nil
-	}
-}
-
-func ConfigurationPreProcessor(pp PreProcessor) NewExchangeOption {
-	return func(ex *Exchange) error {
-		data, err := yaml.Marshal(ex)
-		if err != nil {
-			return err
-		}
-		data, err = pp(data)
-		return yaml.Unmarshal(data, ex)
-	}
-}
-
 func NewExchange(provider ProviderFunc, opts ...NewExchangeOption) (Exchange, error) {
-	data, err := provider()
+	data, _, err := provider()
 	if err != nil {
 		return Exchange{}, err
 	}
-	var ex Exchange
+	ex := Exchange{
+		provider: provider,
+	}
 	if err := yaml.Unmarshal(data, &ex); err != nil {
 		return Exchange{}, err
 	}
@@ -60,14 +44,14 @@ func NewExchange(provider ProviderFunc, opts ...NewExchangeOption) (Exchange, er
 }
 
 type Exchange struct {
-	ConfigRoot string
+	provider ProviderFunc
 
 	Version string               `yaml:"version"`
 	Request RequestConfiguration `yaml:"request"`
 }
 
-func (ex Exchange) InConfigRoot(filename string) string {
-	return path.Join(ex.ConfigRoot, filename)
+func (ex Exchange) Source() ([]byte, string, error) {
+	return ex.provider()
 }
 
 type RequestConfiguration struct {
@@ -121,7 +105,11 @@ func (ex Exchange) RequestBody() ([]byte, error) {
 	if ex.Request.Body.empty() {
 		return nil, nil
 	}
-	f, err := os.OpenFile(ex.InConfigRoot(ex.Request.Body.TemplateFile), os.O_RDONLY, os.ModeAppend)
+	_, root, err := ex.provider()
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.OpenFile(path.Join(path.Dir(root), ex.Request.Body.TemplateFile), os.O_RDONLY, os.ModeAppend)
 	if err != nil {
 		return nil, err
 	}
