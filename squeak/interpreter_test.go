@@ -2,8 +2,8 @@ package squeak
 
 import (
 	"bytes"
-	"github.com/crookdc/pia/squeak/ast"
-	"github.com/crookdc/pia/squeak/token"
+	"github.com/ernilsson/pia/squeak/ast"
+	"github.com/ernilsson/pia/squeak/token"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"

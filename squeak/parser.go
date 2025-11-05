@@ -3,8 +3,8 @@ package squeak
 import (
 	"errors"
 	"fmt"
-	"github.com/crookdc/pia/squeak/ast"
-	"github.com/crookdc/pia/squeak/token"
+	"github.com/ernilsson/pia/squeak/ast"
+	"github.com/ernilsson/pia/squeak/token"
 	"io"
 	"strconv"
 	"strings"

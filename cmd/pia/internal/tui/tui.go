@@ -2,8 +2,8 @@ package tui
 
 import (
 	"bytes"
-	"github.com/crookdc/pia"
-	"github.com/crookdc/pia/squeak"
+	"github.com/ernilsson/pia"
+	"github.com/ernilsson/pia/squeak"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"golang.design/x/clipboard"

@@ -2,7 +2,7 @@ package pia_test
 
 import (
 	"errors"
-	"github.com/crookdc/pia"
+	"github.com/ernilsson/pia"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"strings"

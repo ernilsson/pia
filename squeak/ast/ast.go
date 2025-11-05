@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/crookdc/pia/squeak/token"
+	"github.com/ernilsson/pia/squeak/token"
 )
 
 // Node represent any type of node in an AST. It does not define any functional behaviours. This is by design as the

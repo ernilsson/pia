@@ -1,7 +1,7 @@
 package pia_test
 
 import (
-	"github.com/crookdc/pia"
+	"github.com/ernilsson/pia"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

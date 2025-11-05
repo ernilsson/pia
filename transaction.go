@@ -2,7 +2,7 @@ package pia
 
 import (
 	"bytes"
-	"github.com/crookdc/pia/squeak"
+	"github.com/ernilsson/pia/squeak"
 	"gopkg.in/yaml.v3"
 	"io"
 	"net/http"

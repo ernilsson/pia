@@ -3,7 +3,7 @@ package squeak
 import (
 	"errors"
 	"fmt"
-	"github.com/crookdc/pia/squeak/token"
+	"github.com/ernilsson/pia/squeak/token"
 	"io"
 	"unicode"
 )

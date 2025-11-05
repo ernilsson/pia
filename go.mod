@@ -1,4 +1,4 @@
-module github.com/crookdc/pia
+module github.com/ernilsson/pia
 
 go 1.24.1
 

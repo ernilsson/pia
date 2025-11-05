@@ -2,7 +2,7 @@ package squeak
 
 import (
 	"errors"
-	"github.com/crookdc/pia/squeak/token"
+	"github.com/ernilsson/pia/squeak/token"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"

@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"flag"
-	"github.com/crookdc/pia/cmd/pia/internal/tui"
+	"github.com/ernilsson/pia/cmd/pia/internal/tui"
 	"log"
 	"os"
 	"strings"
