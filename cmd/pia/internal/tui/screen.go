@@ -82,37 +82,41 @@ func (f *finder) input(event *tcell.EventKey) *tcell.EventKey {
 		if f.viewCallback == nil {
 			return event
 		}
-		path, ok := f.currentFile()
-		if !ok {
+		if f.isSelectedNodeDir() {
 			return nil
 		}
+		path := f.tree.GetCurrentNode().GetReference().(string)
 		f.viewCallback(path)
 		return nil
 	case 'x':
 		if f.executeCallback == nil {
 			return event
 		}
-		path, ok := f.currentFile()
-		if !ok {
+		if f.isSelectedNodeDir() {
 			return nil
 		}
+		path := f.tree.GetCurrentNode().GetReference().(string)
 		f.executeCallback(path)
+		return nil
+	case rune(tcell.KeyEnter):
+		if !f.isSelectedNodeDir() {
+			return nil
+		}
+		node := f.tree.GetCurrentNode()
+		f.toggle(node, node.GetReference().(string))
 		return nil
 	default:
 		return event
 	}
 }
 
-func (f *finder) currentFile() (string, bool) {
+func (f *finder) isSelectedNodeDir() bool {
 	path := f.tree.GetCurrentNode().GetReference().(string)
 	info, err := os.Stat(path)
 	if err != nil {
 		panic(err)
 	}
-	if info.IsDir() {
-		return "", false
-	}
-	return path, true
+	return info.IsDir()
 }
 
 func (f *finder) toggle(node *tview.TreeNode, path string) {

@@ -10,3 +10,7 @@ $(BIN)/pia: $(BIN) $(wildcard **/*.go)
 .PHONY: install
 install: $(BIN)/pia
 	cp -rf $(BIN)/pia $(INSTALL_DIR)/pia
+
+.PHONY: clean
+clean: 
+	rm -f $(BIN)/*
