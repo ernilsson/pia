@@ -132,7 +132,7 @@ func Run(wd string, props map[string]string) error {
 
 	<ESC> brings you back here.
 
-	created by crookdc @ github.com/crookdc
+	created by E. R. Nilsson @ github.com/ernilsson
 	`), true, true)
 	app.pages.AddPage("finder", app.finder.root(), true, false)
 	app.pages.AddPage("content", app.content.root(), true, false)
