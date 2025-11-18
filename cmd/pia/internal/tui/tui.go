@@ -105,10 +105,12 @@ func Run(wd string, props map[string]string) error {
 		content:     newContent(),
 		finder:      newFinder(wd),
 		history:     newHistory(128),
-		resolver: pia.DelegatingKeyResolver{
-			Delegates: map[string]pia.KeyResolver{
-				"env":   pia.EnvironmentResolver{},
-				"props": pia.MapResolver(props),
+		resolver: pia.FallbackResolverDecorator{
+			Delegate: pia.DelegatingKeyResolver{
+				Delegates: map[string]pia.KeyResolver{
+					"env":   pia.EnvironmentResolver{},
+					"props": pia.MapResolver(props),
+				},
 			},
 		},
 	}

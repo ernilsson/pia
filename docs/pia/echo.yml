@@ -10,7 +10,7 @@ body:
     <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
       <soap:Body>
         <IsValidISBN10 xmlns="http://webservices.daehosting.com/ISBN">
-          <sISBN>${props:isbn}</sISBN>
+          <sISBN>${props:isbn|1234-1234}</sISBN>
         </IsValidISBN10>
       </soap:Body>
     </soap:Envelope>
@@ -20,5 +20,5 @@ hooks:
       assert(response.status_code == 200, "");
       var xml = response.xml();
       if xml.Body.IsValidISBN10Response.IsValidISBN10Result."_inner" == "true" {
-        println("The ISBN ${props:isbn} is valid!");
+        println("The ISBN ${props:isbn|1234-1234} is valid!");
       }

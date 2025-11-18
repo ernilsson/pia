@@ -19,6 +19,22 @@ func (d DelegatingKeyResolver) Resolve(k string) (string, error) {
 	return delegate.Resolve(sections[1])
 }
 
+type FallbackResolverDecorator struct {
+	Delegate KeyResolver
+}
+
+func (f FallbackResolverDecorator) Resolve(k string) (string, error) {
+	key, fb, ok := strings.Cut(k, "|")
+	if v, err := f.Delegate.Resolve(key); err != nil {
+		if ok {
+			return fb, nil
+		}
+		return "", err
+	} else {
+		return v, nil
+	}
+}
+
 type EnvironmentResolver struct{}
 
 func (e EnvironmentResolver) Resolve(k string) (string, error) {
